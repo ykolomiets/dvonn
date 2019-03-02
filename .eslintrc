@@ -2,7 +2,11 @@
   "env": {
     "node": true
   },
-  "extends": ["eslint:recommended", "airbnb-base", "plugin:@typescript-eslint/recommended", "prettier"],
+  "extends": [
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended",
+    "prettier/@typescript-eslint"
+  ],
   "parser": "@typescript-eslint/parser",
   "rules": {
     "@typescript-eslint/indent": ["error", 2],
