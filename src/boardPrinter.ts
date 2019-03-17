@@ -1,29 +1,29 @@
-import { State, CellState, Cell, MoveDirection } from './cell';
+import { Cell, CellState, PieceColor, Direction } from './cell';
 
-function formatCellInfo(cell: CellState): string {
-  if (cell.state === State.Empty) {
-    return '   ';
+function formatCellInfo(state: CellState): string {
+  if (state.isEmpty) {
+    return ' o ';
   }
 
   let result = '';
-  switch (cell.state) {
-    case State.Black:
+  switch (state.upperColor) {
+    case PieceColor.Black:
       result += '\x1b[32m';
       break;
-    case State.White:
+    case PieceColor.White:
       result += '\x1b[37m';
       break;
-    case State.Red:
+    case PieceColor.Red:
       result += '\x1b[31m';
       break;
     default:
       break;
   }
-  if (cell.stackSize.toString().length === 1) {
+  if (state.stackSize.toString().length === 1) {
     result += ' ';
   }
-  result += cell.stackSize;
-  result += cell.hasDvonnPiece ? '*' : ' ';
+  result += state.stackSize;
+  result += state.containsDvonnPiece ? '*' : ' ';
   result += '\x1b[0m';
   return result;
 }
@@ -33,10 +33,10 @@ function formatLine(lineCells: Cell[]): string {
   lineCells.forEach((cell, index) => {
     result += formatCellInfo(cell.state);
     if (index === lineCells.length - 1) return;
-    if (cell.state.state !== State.Empty && lineCells[index + 1].state.state !== State.Empty) {
-      result += ' - ';
-    } else {
+    if (cell.state.isEmpty || lineCells[index + 1].state.isEmpty) {
       result += '   ';
+    } else {
+      result += ' - ';
     }
   });
   return result;
@@ -45,11 +45,14 @@ function formatLine(lineCells: Cell[]): string {
 function formatDownConnections(cells: Cell[]): string {
   let result = '';
   cells.forEach(cell => {
-    if (cell.state.state === State.Empty) {
+    if (cell.state.isEmpty) {
       result += '      ';
     } else {
-      const swNeighbor = cell.neighbors[MoveDirection.SouthWest];
-      if (swNeighbor !== null && swNeighbor.state.state !== State.Empty) {
+      if (cell.neighbors === null) {
+        throw new Error('Cell neighbors are absent');
+      }
+      const swNeighbor = cell.neighbors[Direction.SouthWest];
+      if (swNeighbor !== null && !swNeighbor.state.isEmpty) {
         result += '/';
       } else {
         result += ' ';
@@ -57,8 +60,8 @@ function formatDownConnections(cells: Cell[]): string {
 
       result += ' ';
 
-      const seNeighbor = cell.neighbors[MoveDirection.SouthEast];
-      if (seNeighbor !== null && seNeighbor.state.state !== State.Empty) {
+      const seNeighbor = cell.neighbors[Direction.SouthEast];
+      if (seNeighbor !== null && !seNeighbor.state.isEmpty) {
         result += '\\';
       } else {
         result += ' ';
@@ -73,11 +76,14 @@ function formatDownConnections(cells: Cell[]): string {
 function formatUpConnections(cells: Cell[]): string {
   let result = '';
   cells.forEach(cell => {
-    if (cell.state.state === State.Empty) {
+    if (cell.state.isEmpty) {
       result += '      ';
     } else {
-      const nwNeighbor = cell.neighbors[MoveDirection.NorthWest];
-      if (nwNeighbor !== null && nwNeighbor.state.state !== State.Empty) {
+      if (cell.neighbors === null) {
+        throw new Error('Cell neighbors are absent');
+      }
+      const nwNeighbor = cell.neighbors[Direction.NorthWest];
+      if (nwNeighbor !== null && !nwNeighbor.state.isEmpty) {
         result += '\\';
       } else {
         result += ' ';
@@ -85,8 +91,8 @@ function formatUpConnections(cells: Cell[]): string {
 
       result += ' ';
 
-      const neNeighbor = cell.neighbors[MoveDirection.NorthEast];
-      if (neNeighbor !== null && neNeighbor.state.state !== State.Empty) {
+      const neNeighbor = cell.neighbors[Direction.NorthEast];
+      if (neNeighbor !== null && !neNeighbor.state.isEmpty) {
         result += '/';
       } else {
         result += ' ';
@@ -99,6 +105,7 @@ function formatUpConnections(cells: Cell[]): string {
 }
 
 function printBoard(board: Cell[]): void {
+  console.log('\n---------------------------------------------------------------');
   let firstLine = '      ';
   firstLine += formatLine(board.slice(0, 9));
   console.log(firstLine);
@@ -122,6 +129,7 @@ function printBoard(board: Cell[]): void {
   fifthLine += formatLine(board.slice(40, 49));
   console.log(`      ${formatUpConnections(board.slice(40, 49))}`);
   console.log(fifthLine);
+  console.log('---------------------------------------------------------------\n');
 }
 
 export default printBoard;

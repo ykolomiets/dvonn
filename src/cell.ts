@@ -1,32 +1,22 @@
-enum Color {
-  Black,
-  White,
-  Red,
+export enum PieceColor {
+  Red = 'r',
+  White = 'w',
+  Black = 'b',
 }
 
-enum State {
-  Empty,
-  Black,
-  White,
-  Red,
-}
+export type CellState =
+  | {
+      isEmpty: true;
+    }
+  | {
+      isEmpty: false;
+      stackSize: number;
+      upperColor: PieceColor;
+      containsDvonnPiece: boolean;
+    };
 
-export interface CellState {
-  state: State;
-  stackSize: number;
-  hasDvonnPiece: boolean;
-}
-
-function getEmptyCellState(): CellState {
-  return {
-    state: State.Empty,
-    stackSize: 0,
-    hasDvonnPiece: false,
-  };
-}
-
-enum MoveDirection {
-  NorthEast,
+export enum Direction {
+  NorthEast = 0,
   East,
   SouthEast,
   SouthWest,
@@ -34,32 +24,9 @@ enum MoveDirection {
   NorthWest,
 }
 
-interface Neighbors {
-  [MoveDirection.NorthEast]: Cell | null;
-  [MoveDirection.East]: Cell | null;
-  [MoveDirection.SouthEast]: Cell | null;
-  [MoveDirection.SouthWest]: Cell | null;
-  [MoveDirection.West]: Cell | null;
-  [MoveDirection.NorthWest]: Cell | null;
-}
+export type Neighbors = [Cell | null, Cell | null, Cell | null, Cell | null, Cell | null, Cell | null];
 
 export interface Cell {
   state: CellState;
-  neighbors: Neighbors;
+  neighbors: Neighbors | null;
 }
-
-function getEmptyCell(): Cell {
-  return {
-    state: getEmptyCellState(),
-    neighbors: {
-      [MoveDirection.NorthEast]: null,
-      [MoveDirection.East]: null,
-      [MoveDirection.SouthEast]: null,
-      [MoveDirection.SouthWest]: null,
-      [MoveDirection.West]: null,
-      [MoveDirection.NorthWest]: null,
-    },
-  };
-}
-
-export { Color, State, MoveDirection, getEmptyCell };
