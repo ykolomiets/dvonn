@@ -27,6 +27,7 @@ export enum Direction {
 export type Neighbors = [Cell | null, Cell | null, Cell | null, Cell | null, Cell | null, Cell | null];
 
 export interface Cell {
+  index: number;
   state: CellState;
-  neighbors: Neighbors | null;
+  neighbors: Neighbors;
 }

@@ -31,10 +31,10 @@ function generateAdjacencyList(): AdjacencyList {
     list[i] = [i - 9, i + 1, i + 11, i + 10, i - 1, i - 10];
   }
   for (let i = 20; i <= 28; i += 1) {
-    list[i] = [i - 10, i + 1, i + 11, i - 10, i - 1, i - 11];
+    list[i] = [i - 10, i + 1, i + 11, i + 10, i - 1, i - 11];
   }
   for (let i = 31; i <= 38; i += 1) {
-    list[i] = [i - 10, i + 1, i + 10, i - 9, i - 1, i - 11];
+    list[i] = [i - 10, i + 1, i + 10, i + 9, i - 1, i - 11];
   }
   for (let i = 41; i <= 47; i += 1) {
     list[i] = [i - 9, i + 1, -1, -1, i - 1, i - 10];

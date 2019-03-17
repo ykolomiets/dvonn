@@ -3,6 +3,7 @@ import { Cell, PieceColor, Direction, Neighbors } from './cell';
 import printBoard from './boardPrinter';
 import { deserializeBoard, serializeBoard } from './serializer';
 import { shuffleArray } from './utils';
+import { movesMap } from './movesMap';
 
 export enum PlayerColor {
   White,
@@ -89,6 +90,7 @@ function createEmptyBoard(): Cell[] {
   const board: Cell[] = [];
   for (let i = 0; i < 49; i++) {
     board.push({
+      index: i,
       state: {
         isEmpty: true,
       },
@@ -99,9 +101,42 @@ function createEmptyBoard(): Cell[] {
   return board;
 }
 
+interface AvailableMoves {
+  [pos: number]: number[];
+}
+
+function getAvailableMoves(board: Cell[], player: PlayerColor): AvailableMoves | null {
+  let movesExists = false;
+  const moves: AvailableMoves = {};
+  for (let i = 0; i < 49; i++) {
+    const cell = board[i];
+    const playerPieceColor = player === PlayerColor.White ? PieceColor.White : PieceColor.Black;
+    if (!cell.state.isEmpty && cell.state.upperColor === playerPieceColor && cell.state.stackSize <= 10) {
+      const movesFromMap = movesMap[i][cell.state.stackSize - 1];
+      if (movesFromMap) {
+        const movesForCell: number[] = [];
+        for (let direction = 0; direction < 6; direction++) {
+          const cellIndex = movesFromMap[direction];
+          if (cellIndex !== -1) {
+            const targetCell = board[cellIndex];
+            if (!targetCell.state.isEmpty) {
+              movesForCell.push(cellIndex);
+            }
+          }
+        }
+        if (movesForCell.length > 0) {
+          movesExists = true;
+          moves[i] = movesForCell;
+        }
+      }
+    }
+  }
+  return movesExists ? moves : null;
+}
+
 export class Game {
   private history: SerializedGameState[] = [];
-  private state: GameState;
+  public state: GameState; // TODO: make private and expose only getters;
 
   public constructor() {
     this.state = {
@@ -175,6 +210,74 @@ export class Game {
     }
   }
 
+  public getAvailableMoves(player: PlayerColor): AvailableMoves | null {
+    if (this.state.stage !== GameStage.MovingPieces) {
+      throw new Error('Not moving pieces stage');
+    }
+    return getAvailableMoves(this.state.board, player);
+  }
+
+  public movePiece(player: PlayerColor, startPos: number, targetPos: number): void {
+    if (this.state.stage !== GameStage.MovingPieces) {
+      throw new Error('Not moving pieces stage');
+    }
+    if (this.state.turn !== player) {
+      throw new Error('Another player turn');
+    }
+    if (startPos < 0 || startPos >= 49 || (targetPos < 0 || targetPos >= 49)) {
+      throw new Error('Positions is not in range [0, 48]');
+    }
+
+    const availableMoves = getAvailableMoves(this.state.board, player);
+    if (!availableMoves || !availableMoves[startPos] || !availableMoves[startPos].includes(targetPos)) {
+      throw new Error('Invalid move');
+    }
+    this.history.push(serializeGameState(this.state));
+
+    const startCell = this.state.board[startPos];
+    const targetCell = this.state.board[targetPos];
+    if (!startCell.state.isEmpty && !targetCell.state.isEmpty) {
+      targetCell.state.stackSize += startCell.state.stackSize;
+      targetCell.state.upperColor = player === PlayerColor.White ? PieceColor.White : PieceColor.Black;
+      if (!targetCell.state.containsDvonnPiece) {
+        targetCell.state.containsDvonnPiece = startCell.state.containsDvonnPiece;
+      }
+      startCell.state = { isEmpty: true };
+    }
+    //checkConnectivity(); TODO
+    const opponent: PlayerColor = player === PlayerColor.White ? PlayerColor.Black : PlayerColor.White;
+    if (getAvailableMoves(this.state.board, opponent)) {
+      this.state.turn = opponent;
+      return;
+    }
+    if (!getAvailableMoves(this.state.board, player)) {
+      this.gameOver();
+    }
+  }
+
+  private gameOver(): void {
+    const score = {
+      [PlayerColor.White]: 0,
+      [PlayerColor.Black]: 0,
+    };
+    for (let i = 0; i < 49; i++) {
+      const cell = this.state.board[i];
+      if (!cell.state.isEmpty) {
+        if (cell.state.upperColor === PieceColor.White) {
+          score[PlayerColor.White] += cell.state.stackSize;
+        } else if (cell.state.upperColor === PieceColor.Black) {
+          score[PlayerColor.Black] += cell.state.stackSize;
+        }
+      }
+    }
+    const winner = score[PlayerColor.White] > score[PlayerColor.Black] ? PlayerColor.White : PlayerColor.Black;
+    this.state = {
+      stage: GameStage.GameOver,
+      winner,
+      board: this.state.board,
+    };
+  }
+
   public printBoard(): void {
     printBoard(this.state.board);
   }
@@ -183,3 +286,21 @@ export class Game {
 const game = new Game();
 game.randomPositioning();
 game.printBoard();
+
+while (true) {
+  game.printBoard();
+
+  if (game.state.stage === GameStage.MovingPieces) {
+    const turn = game.state.turn;
+    const availableMoves = game.getAvailableMoves(turn);
+    if (availableMoves) {
+      const startPos = (Object.keys(availableMoves)[0] as any) as number;
+      const targetPos = availableMoves[startPos][0];
+      console.log(`Move: turn = ${turn}, [${startPos}] -> [${targetPos}]`);
+      game.movePiece(turn, startPos, targetPos);
+    }
+  } else if (game.state.stage === GameStage.GameOver) {
+    console.log(`GameOver: ${game.state.winner}`);
+    break;
+  }
+}

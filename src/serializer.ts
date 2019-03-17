@@ -47,16 +47,21 @@ export function deserializeBoard(boardStr: string): Cell[] {
     const cellStr = cells[i];
     let cell: Cell;
     if (cellStr === '') {
-      cell = { state: { isEmpty: true }, neighbors: null };
+      cell = {
+        index: i,
+        state: { isEmpty: true },
+        neighbors: [null, null, null, null, null, null],
+      };
     } else {
       cell = {
+        index: i,
         state: {
           isEmpty: false,
           upperColor: parseColor(cellStr[0]),
           containsDvonnPiece: cellStr[cellStr.length - 1] === '*',
           stackSize: parseInt(cellStr.substr(1)),
         },
-        neighbors: null,
+        neighbors: [null, null, null, null, null, null],
       };
     }
     res.push(cell);
