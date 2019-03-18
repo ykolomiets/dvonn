@@ -4,6 +4,7 @@ import printBoard from './boardPrinter';
 import { deserializeBoard, serializeBoard } from './serializer';
 import { shuffleArray } from './utils';
 import { movesMap } from './movesMap';
+import { findComponents } from './findComponents';
 
 export enum PlayerColor {
   White,
@@ -244,7 +245,8 @@ export class Game {
       }
       startCell.state = { isEmpty: true };
     }
-    //checkConnectivity(); TODO
+    this.checkConnectivity();
+
     const opponent: PlayerColor = player === PlayerColor.White ? PlayerColor.Black : PlayerColor.White;
     if (getAvailableMoves(this.state.board, opponent)) {
       this.state.turn = opponent;
@@ -253,6 +255,26 @@ export class Game {
     if (!getAvailableMoves(this.state.board, player)) {
       this.gameOver();
     }
+  }
+
+  private checkConnectivity(): void {
+    const components = findComponents(this.state.board);
+    components.forEach(component => {
+      let containsDvonnPiece = false;
+      for (let i = 0; i < component.length; i++) {
+        const cell = component[i];
+        if (!cell.state.isEmpty && cell.state.containsDvonnPiece) {
+          containsDvonnPiece = true;
+          break;
+        }
+      }
+      if (!containsDvonnPiece) {
+        console.log(`Remove component: ${component.map(c => c.index)}`);
+        component.forEach(cell => {
+          cell.state = { isEmpty: true };
+        });
+      }
+    });
   }
 
   private gameOver(): void {
@@ -294,8 +316,10 @@ while (true) {
     const turn = game.state.turn;
     const availableMoves = game.getAvailableMoves(turn);
     if (availableMoves) {
-      const startPos = (Object.keys(availableMoves)[0] as any) as number;
-      const targetPos = availableMoves[startPos][0];
+      const startPositions = Object.keys(availableMoves);
+      const startPos = (startPositions[Math.floor(Math.random() * startPositions.length)] as unknown) as number;
+      const targetPositions = availableMoves[startPos];
+      const targetPos = targetPositions[Math.floor(Math.random() * targetPositions.length)];
       console.log(`Move: turn = ${turn}, [${startPos}] -> [${targetPos}]`);
       game.movePiece(turn, startPos, targetPos);
     }
