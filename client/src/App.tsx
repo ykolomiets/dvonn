@@ -1,26 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import styled from '@emotion/styled';
-import boardImage from '../assets/images/board.svg';
 import { Game as DvonnLogic, GameState as DvonnLogicState, GameStage } from '../../common/src/dvonn';
-import { Cell } from '../../common/src/cell';
-import { serializeBoard } from '../../common/src/serializer';
-
-const BoardWrap = styled('div')`
-  width: 1500px;
-  height: 500px;
-  position: relative;
-`;
-
-interface BoardProps {
-  board: Cell[];
-}
-
-class Board extends React.Component<BoardProps> {
-  public render() {
-    return <div>{serializeBoard(this.props.board)}</div>;
-  }
-}
+import Board from './Board';
 
 class Game extends React.Component<{}, DvonnLogicState> {
   private logic: DvonnLogic;
