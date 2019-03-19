@@ -9,7 +9,8 @@
     "test:watch": "jest --silent --watch",
     "test:coverage": "jest --silent --coverage",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
-    "dev": "parcel src/index.html"
+    "tsc": "tsc",
+    "dev": "yarn tsc && parcel src/index.html"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
@@ -34,6 +35,9 @@
     "typescript": "^3.3.3"
   },
   "dependencies": {
+    "@emotion/core": "^10.0.9",
+    "@emotion/styled": "^10.0.9",
+    "babel-plugin-emotion": "^10.0.9",
     "react": "^16.8.4",
     "react-dom": "^16.8.4"
   }

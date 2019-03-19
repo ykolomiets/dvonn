@@ -24,13 +24,13 @@ function setNeighbores(board: Cell[]): void {
   }
 }
 
-enum GameStage {
+export enum GameStage {
   PlacingPieces,
   MovingPieces,
   GameOver,
 }
 
-type GameState =
+export type GameState =
   | {
       stage: GameStage.PlacingPieces;
       turn: PlayerColor;
@@ -303,28 +303,19 @@ export class Game {
   public printBoard(): void {
     printBoard(this.state.board);
   }
-}
 
-const game = new Game();
-game.randomPositioning();
-game.printBoard();
-
-while (true) {
-  game.printBoard();
-
-  if (game.state.stage === GameStage.MovingPieces) {
-    const turn = game.state.turn;
-    const availableMoves = game.getAvailableMoves(turn);
-    if (availableMoves) {
-      const startPositions = Object.keys(availableMoves);
-      const startPos = (startPositions[Math.floor(Math.random() * startPositions.length)] as unknown) as number;
-      const targetPositions = availableMoves[startPos];
-      const targetPos = targetPositions[Math.floor(Math.random() * targetPositions.length)];
-      console.log(`Move: turn = ${turn}, [${startPos}] -> [${targetPos}]`);
-      game.movePiece(turn, startPos, targetPos);
+  public randomMove(): void {
+    if (this.state.stage === GameStage.MovingPieces) {
+      const turn = this.state.turn;
+      const availableMoves = this.getAvailableMoves(turn);
+      if (availableMoves) {
+        const startPositions = Object.keys(availableMoves);
+        const startPos = (startPositions[Math.floor(Math.random() * startPositions.length)] as unknown) as number;
+        const targetPositions = availableMoves[startPos];
+        const targetPos = targetPositions[Math.floor(Math.random() * targetPositions.length)];
+        console.log(`Move: turn = ${turn}, [${startPos}] -> [${targetPos}]`);
+        this.movePiece(turn, startPos, targetPos);
+      }
     }
-  } else if (game.state.stage === GameStage.GameOver) {
-    console.log(`GameOver: ${game.state.winner}`);
-    break;
   }
 }
