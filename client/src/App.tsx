@@ -36,7 +36,7 @@ class Game extends React.Component<{}, DvonnLogicState> {
     return (
       <div>
         <h1>Stage: {stage}</h1>
-        <Board board={this.state.board} />
+        <Board board={this.state.board} size={{ width: 1353, height: 500 }} />
         <button onClick={this.randomMove}>Move</button>
       </div>
     );
