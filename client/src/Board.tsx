@@ -2,12 +2,16 @@
 import React from 'react';
 import { css, jsx } from '@emotion/core';
 import boardImage from '../assets/images/board.svg';
-import { Cell } from '../../common/src/cell';
+import { Cell, PieceColor } from '../../common/src/cell';
 import Piece from './Piece';
+import { AvailableMoves, PlayerColor } from '../../common/src/dvonn';
 
 interface BoardProps {
+  turn: PlayerColor | undefined;
   board: Cell[];
+  availableMoves: AvailableMoves | null;
   size: { width: number; height: number };
+  onMove: (from: number, to: number) => void;
 }
 
 interface BoardState {
@@ -25,14 +29,51 @@ class Board extends React.Component<BoardProps, BoardState> {
   }
 
   private handlePieceClick(index: number): void {
-    console.log('Piece clicked: ', index);
     const piece = this.props.board[index];
-    this.setState({
-      selectedPieceIndex: index,
-    });
+    if (piece.state.isEmpty) return;
+    if (this.state.selectedPieceIndex === -1) {
+      if (
+        piece.state.upperColor === PieceColor.Red ||
+        (piece.state.upperColor === PieceColor.Black && this.props.turn === PlayerColor.White) ||
+        (piece.state.upperColor === PieceColor.White && this.props.turn === PlayerColor.Black)
+      ) {
+        return;
+      }
+      this.setState({
+        selectedPieceIndex: index,
+      });
+    } else {
+      if (piece.index === this.state.selectedPieceIndex) {
+        this.setState({
+          selectedPieceIndex: -1,
+        });
+        return;
+      }
+
+      let availableMoves: number[] = [];
+      if (this.props.availableMoves && this.props.availableMoves[this.state.selectedPieceIndex]) {
+        availableMoves = this.props.availableMoves[this.state.selectedPieceIndex];
+        if (availableMoves.includes(index)) {
+          console.log(`Move: ${this.state.selectedPieceIndex} -> ${index}`);
+          this.setState({
+            selectedPieceIndex: -1,
+          });
+          this.props.onMove(this.state.selectedPieceIndex, index);
+        } else {
+          console.log(`Impossible move`);
+        }
+      }
+    }
   }
 
   public render() {
+    let availableMoves: number[] = [];
+
+    if (this.props.availableMoves && this.props.availableMoves[this.state.selectedPieceIndex]) {
+      //TODO:  remove this shit
+      availableMoves = this.props.availableMoves[this.state.selectedPieceIndex];
+    }
+
     return (
       <div
         css={css`
@@ -45,10 +86,16 @@ class Board extends React.Component<BoardProps, BoardState> {
       >
         {this.props.board.map(cell => {
           if (cell.state.isEmpty) return null;
+
           return (
             <Piece
               key={cell.index}
               selected={this.state.selectedPieceIndex === cell.index}
+              faded={
+                this.state.selectedPieceIndex !== -1 &&
+                this.state.selectedPieceIndex !== cell.index &&
+                !availableMoves.includes(cell.index)
+              }
               stackSize={cell.state.stackSize}
               upperColor={cell.state.upperColor}
               containsDvonnPiece={cell.state.containsDvonnPiece}
