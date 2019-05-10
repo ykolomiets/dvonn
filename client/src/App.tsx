@@ -3,7 +3,11 @@ import ReactDOM from 'react-dom';
 import { Game as DvonnLogic, GameState as DvonnLogicState, GameStage, PlayerColor } from '../../common/src/dvonn';
 import Board from './Board';
 
-class Game extends React.Component<{}, DvonnLogicState> {
+type GameState = {
+  coreLogicState: DvonnLogicState;
+};
+
+class Game extends React.Component<{}, GameState> {
   private logic: DvonnLogic;
 
   public constructor(props: {}) {
@@ -12,30 +16,36 @@ class Game extends React.Component<{}, DvonnLogicState> {
     this.logic = new DvonnLogic();
     this.logic.randomPositioning();
 
-    this.state = this.logic.state;
+    this.state = {
+      coreLogicState: this.logic.state,
+    };
   }
 
   private randomMove = () => {
     this.logic.randomMove();
-    this.setState(this.logic.state);
+    this.setState({
+      coreLogicState: this.logic.state,
+    });
   };
 
   private handleMove = (from: number, to: number) => {
-    if (this.state.stage !== GameStage.MovingPieces) return;
-    this.logic.movePiece(this.state.turn, from, to);
-    this.setState(this.logic.state);
+    if (this.logic.state.stage !== GameStage.MovingPieces) return;
+    this.logic.movePiece(this.logic.state.turn, from, to);
+    this.setState({
+      coreLogicState: this.logic.state,
+    });
   };
 
   public render() {
     let stage: string = 'unknown';
     let availableMoves = null;
-    switch (this.state.stage) {
+    switch (this.state.coreLogicState.stage) {
       case GameStage.PlacingPieces:
         stage = 'Placing pieces';
         break;
       case GameStage.MovingPieces:
-        stage = `Moving pieces: ${this.state.turn === PlayerColor.White ? 'white' : 'black'}`;
-        availableMoves = this.logic.getAvailableMoves(this.state.turn);
+        stage = `Moving pieces: ${this.state.coreLogicState.turn === PlayerColor.White ? 'white' : 'black'}`;
+        availableMoves = this.logic.getAvailableMoves(this.state.coreLogicState.turn);
         break;
       case GameStage.GameOver:
         stage = 'GameOver';
@@ -45,9 +55,9 @@ class Game extends React.Component<{}, DvonnLogicState> {
       <div>
         <h1>Stage: {stage}</h1>
         <Board
-          board={this.state.board}
+          board={this.state.coreLogicState.board}
           availableMoves={availableMoves}
-          turn={this.state.stage === GameStage.MovingPieces ? this.state.turn : undefined}
+          turn={this.state.coreLogicState.stage === GameStage.MovingPieces ? this.state.coreLogicState.turn : undefined}
           onMove={this.handleMove}
           size={{ width: 1353, height: 500 }}
         />

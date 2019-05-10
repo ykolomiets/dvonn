@@ -102,7 +102,7 @@ function createEmptyBoard(): Cell[] {
   return board;
 }
 
-interface AvailableMoves {
+export interface AvailableMoves {
   [pos: number]: number[];
 }
 
@@ -113,6 +113,19 @@ function getAvailableMoves(board: Cell[], player: PlayerColor): AvailableMoves |
     const cell = board[i];
     const playerPieceColor = player === PlayerColor.White ? PieceColor.White : PieceColor.Black;
     if (!cell.state.isEmpty && cell.state.upperColor === playerPieceColor && cell.state.stackSize <= 10) {
+      const neighbors = movesMap[i][0];
+      let surrounded = true;
+      for (let direction = 0; direction < 6; direction++) {
+        const index = neighbors[direction];
+        if (index === -1 || board[index].state.isEmpty) {
+          surrounded = false;
+          break;
+        }
+      }
+      if (surrounded) {
+        continue;
+      }
+
       const movesFromMap = movesMap[i][cell.state.stackSize - 1];
       if (movesFromMap) {
         const movesForCell: number[] = [];

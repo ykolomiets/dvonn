@@ -53,14 +53,10 @@ class Board extends React.Component<BoardProps, BoardState> {
       let availableMoves: number[] = [];
       if (this.props.availableMoves && this.props.availableMoves[this.state.selectedPieceIndex]) {
         availableMoves = this.props.availableMoves[this.state.selectedPieceIndex];
+        this.setState({ selectedPieceIndex: -1 });
         if (availableMoves.includes(index)) {
           console.log(`Move: ${this.state.selectedPieceIndex} -> ${index}`);
-          this.setState({
-            selectedPieceIndex: -1,
-          });
           this.props.onMove(this.state.selectedPieceIndex, index);
-        } else {
-          console.log(`Impossible move`);
         }
       }
     }
