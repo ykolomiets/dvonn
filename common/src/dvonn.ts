@@ -1,7 +1,7 @@
 import adjacencyList from './adjacencyList';
 import { Cell, PieceColor, Direction, Neighbors } from './cell';
 import printBoard from './boardPrinter';
-import { deserializeBoard, serializeBoard } from './serializer';
+import { serializeBoard } from './serializer';
 import { shuffleArray } from './utils';
 import { movesMap } from './movesMap';
 import { findComponents } from './findComponents';
@@ -11,7 +11,7 @@ export enum PlayerColor {
   Black,
 }
 
-function setNeighbores(board: Cell[]): void {
+export function setNeighbores(board: Cell[]): void {
   for (let i = 0; i < 49; i += 1) {
     const neighborsIndexes = adjacencyList[i];
     const cellNeighbors: Neighbors = [null, null, null, null, null, null];
@@ -282,7 +282,6 @@ export class Game {
         }
       }
       if (!containsDvonnPiece) {
-        console.log(`Remove component: ${component.map(c => c.index)}`);
         component.forEach(cell => {
           cell.state = { isEmpty: true };
         });
@@ -326,7 +325,6 @@ export class Game {
         const startPos = (startPositions[Math.floor(Math.random() * startPositions.length)] as unknown) as number;
         const targetPositions = availableMoves[startPos];
         const targetPos = targetPositions[Math.floor(Math.random() * targetPositions.length)];
-        console.log(`Move: turn = ${turn}, [${startPos}] -> [${targetPos}]`);
         this.movePiece(turn, startPos, targetPos);
       }
     }
