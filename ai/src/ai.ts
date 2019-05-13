@@ -1,6 +1,12 @@
 import { Cell, PieceColor } from "../../common/src/cell";
 import { movesMap } from "../../common/src/movesMap";
-import { Game, GameStage, PlayerColor } from "../../common/src/dvonn";
+import {
+  Game,
+  GameStage,
+  PlayerColor,
+  setNeighbores
+} from "../../common/src/dvonn";
+import { serializeBoard, deserializeBoard } from "../../common/src/serializer";
 
 const DVONN_PIECE_MASK = 0b1000000000000000;
 const TOP_PIECE_COLOR_MASK = 0b0110000000000000;
@@ -237,6 +243,103 @@ function minimax(
   }
 }
 
+function alphabeta(
+  board: ByteBoard,
+  isWhiteTurn: boolean,
+  depth: number,
+  alpha: number,
+  beta: number,
+  maximizingPlayer: boolean,
+  stats: MinimaxStatistics
+): [number, Move | null] {
+  if (depth === 0) {
+    return [evaluateBoard(board), null];
+  }
+  if (maximizingPlayer) {
+    const moves = findAvailableMoves(board, isWhiteTurn);
+    if (moves.length === 0) {
+      const [value] = alphabeta(
+        board,
+        !isWhiteTurn,
+        alpha,
+        beta,
+        depth - 1,
+        false,
+        stats
+      );
+      return [value, null];
+    } else {
+      let value = -Infinity;
+      let move: Move = moves[0];
+      for (let i = 0; i < moves.length; i++) {
+        stats.totalNodes += 1;
+        const boardCopy = new Uint16Array(board);
+        movePiece(boardCopy, moves[i]);
+        const [newValue] = alphabeta(
+          boardCopy,
+          !isWhiteTurn,
+          depth - 1,
+          alpha,
+          beta,
+          false,
+          stats
+        );
+        if (newValue > value) {
+          value = newValue;
+          move = moves[i];
+        }
+        if (newValue > alpha) {
+          alpha = newValue;
+        }
+        if (alpha >= beta) {
+          break;
+        }
+      }
+      return [value, move];
+    }
+  } else {
+    const moves = findAvailableMoves(board, isWhiteTurn);
+    if (moves.length === 0) {
+      const [value] = alphabeta(
+        board,
+        !isWhiteTurn,
+        alpha,
+        beta,
+        depth - 1,
+        true,
+        stats
+      );
+      return [value, null];
+    } else {
+      let value = +Infinity;
+      for (let i = 0; i < moves.length; i++) {
+        stats.totalNodes += 1;
+        const boardCopy = new Uint16Array(board);
+        movePiece(boardCopy, moves[i]);
+        const [newValue] = alphabeta(
+          boardCopy,
+          !isWhiteTurn,
+          depth - 1,
+          alpha,
+          beta,
+          true,
+          stats
+        );
+        if (newValue < value) {
+          value = newValue;
+        }
+        if (newValue < beta) {
+          beta = newValue;
+        }
+        if (alpha >= beta) {
+          break;
+        }
+      }
+      return [value, null];
+    }
+  }
+}
+
 function evaluateBoard(board: ByteBoard): number {
   const whiteAvailableMoves = findAvailableMoves(board, true);
   const blackAvailableMoves = findAvailableMoves(board, false);
@@ -271,19 +374,33 @@ function printByteBoard(board: ByteBoard): void {
 
 const game = new Game();
 game.randomPositioning();
+game.state.board = deserializeBoard(
+  "w1,b1,b1,b1,b1,b1,b1,b1,b1,w1,b1,w1,w1,w1,w1,b1,w1,b1,r1*,w1,w1,w1,w1,b1,w1,b1,b1,w1,b1,w1,w1,r1*,w1,w1,w1,b1,w1,b1,b1,b1,w1,w1,b1,w1,w1,b1,r1*,b1,b1,"
+);
+setNeighbores(game.state.board);
 
+let totalCountOfNodes = 0;
 while (game.state.stage === GameStage.MovingPieces) {
   game.printBoard();
   if (game.state.turn === PlayerColor.Black) {
     game.randomMove();
   } else {
     const byteBoard = convertCellBooardToByteForm(game.state.board);
-    console.time("minimax");
+    console.time("alphabeta");
     const statistics: MinimaxStatistics = { totalNodes: 0 };
-    const [value, move] = minimax(byteBoard, true, 4, true, statistics);
-    console.timeEnd("minimax");
+    const [value, move] = alphabeta(
+      byteBoard,
+      true,
+      6,
+      -Infinity,
+      +Infinity,
+      true,
+      statistics
+    );
+    console.timeEnd("alphabeta");
     console.log("Move: ", move, " with value: ", value);
     console.log("Nodes reiewed: ", statistics.totalNodes);
+    totalCountOfNodes += statistics.totalNodes;
     if (move !== null) {
       game.movePiece(PlayerColor.White, move[0], move[1]);
     }
@@ -298,3 +415,4 @@ console.log("Final position: ");
 game.printBoard();
 
 console.log("Winner: ", game.state.winner);
+console.log("Nodes observed: ", totalCountOfNodes);
