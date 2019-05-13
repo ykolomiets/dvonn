@@ -2,9 +2,9 @@
 import React from 'react';
 import { css, jsx } from '@emotion/core';
 import boardImage from '../assets/images/board.svg';
-import { Cell, PieceColor } from '../../common/src/cell';
+import { Cell, PieceColor } from '../../common/src/core/cell';
 import Piece from './Piece';
-import { AvailableMoves, PlayerColor } from '../../common/src/dvonn';
+import { AvailableMoves, PlayerColor } from '../../common/src/core/dvonn';
 
 interface BoardProps {
   turn: PlayerColor | undefined;

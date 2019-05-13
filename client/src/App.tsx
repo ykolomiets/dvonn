@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Game as DvonnLogic, GameState as DvonnLogicState, GameStage, PlayerColor } from '../../common/src/dvonn';
+import { Game as DvonnLogic, GameState as DvonnLogicState, GameStage, PlayerColor } from '../../common/src/core/dvonn';
 import Board from './Board';
 
 type GameState = {
@@ -23,6 +23,20 @@ class Game extends React.Component<{}, GameState> {
 
   private randomMove = () => {
     this.logic.randomMove();
+    this.setState({
+      coreLogicState: this.logic.state,
+    });
+  };
+
+  private aiMove = () => {
+    this.logic.aiMove();
+    this.setState({
+      coreLogicState: this.logic.state,
+    });
+  };
+
+  private moveBack = () => {
+    this.logic.moveBack();
     this.setState({
       coreLogicState: this.logic.state,
     });
@@ -61,7 +75,13 @@ class Game extends React.Component<{}, GameState> {
           onMove={this.handleMove}
           size={{ width: 1353, height: 500 }}
         />
-        <button onClick={this.randomMove}>Move</button>
+        <button onClick={this.randomMove}>Random Move</button>
+        <br />
+        <button onClick={this.aiMove}>AI Move</button>
+        <br />
+        <br />
+        <br />
+        <button onClick={this.moveBack}>Move back</button>
       </div>
     );
   }

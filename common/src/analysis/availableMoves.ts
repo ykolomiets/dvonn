@@ -1,4 +1,4 @@
-import { Game, GameStage } from '../dvonn';
+import { Game, GameStage } from '../core/dvonn';
 import { writeFileSync } from 'fs';
 
 const data: number[][] = [];

@@ -1,6 +1,6 @@
 import React, { SFC } from 'react';
 import styled from '@emotion/styled';
-import { PieceColor } from '../../common/src/cell';
+import { PieceColor } from '../../common/src/core/cell';
 
 interface PieceProps {
   className?: string;

@@ -1,4 +1,4 @@
-import { Game, GameStage } from '../dvonn';
+import { Game, GameStage } from '../core/dvonn';
 import { writeFileSync } from 'fs';
 
 const winners: [number, number] = [0, 0];

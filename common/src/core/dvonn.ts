@@ -1,10 +1,11 @@
 import adjacencyList from './adjacencyList';
 import { Cell, PieceColor, Direction, Neighbors } from './cell';
 import printBoard from './boardPrinter';
-import { serializeBoard } from './serializer';
+import { serializeBoard, deserializeBoard } from './serializer';
 import { shuffleArray } from './utils';
 import { movesMap } from './movesMap';
 import { findComponents } from './findComponents';
+import { getBestMove } from '../ai/ai';
 
 export enum PlayerColor {
   White,
@@ -326,6 +327,33 @@ export class Game {
         const targetPositions = availableMoves[startPos];
         const targetPos = targetPositions[Math.floor(Math.random() * targetPositions.length)];
         this.movePiece(turn, startPos, targetPos);
+      }
+    }
+  }
+
+  public aiMove(): void {
+    if (this.state.stage === GameStage.MovingPieces) {
+      const turn = this.state.turn;
+      const move = getBestMove(this.state.board, turn === PlayerColor.White);
+      if (move) {
+        console.log('Move', move);
+        this.movePiece(turn, move[0], move[1]);
+      }
+    }
+  }
+
+  public moveBack(): void {
+    const previousState = this.history.pop();
+    if (previousState) {
+      switch (previousState.stage) {
+        case GameStage.MovingPieces:
+          this.state = {
+            stage: previousState.stage,
+            turn: previousState.turn,
+            board: deserializeBoard(previousState.board),
+          };
+          setNeighbores(this.state.board);
+          break;
       }
     }
   }
