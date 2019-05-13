@@ -1,6 +1,6 @@
 import { Cell, PieceColor } from "../../common/src/cell";
 import { movesMap } from "../../common/src/movesMap";
-import { Game } from "../../common/src/dvonn";
+import { Game, GameStage, PlayerColor } from "../../common/src/dvonn";
 
 const DVONN_PIECE_MASK = 0b1000000000000000;
 const TOP_PIECE_COLOR_MASK = 0b0110000000000000;
@@ -170,11 +170,83 @@ function calculateScore(board: ByteBoard): [number, number] {
   return score;
 }
 
+interface MinimaxStatistics {
+  totalNodes: number;
+}
+
+function minimax(
+  board: ByteBoard,
+  isWhiteTurn: boolean,
+  depth: number,
+  maximizingPlayer: boolean,
+  stats: MinimaxStatistics
+): [number, Move | null] {
+  if (depth === 0) {
+    return [evaluateBoard(board), null];
+  }
+  if (maximizingPlayer) {
+    const moves = findAvailableMoves(board, isWhiteTurn);
+    stats.totalNodes += moves.length;
+    if (moves.length === 0) {
+      const [value] = minimax(board, !isWhiteTurn, depth - 1, false, stats);
+      return [value, null];
+    } else {
+      let value = -Infinity;
+      let move: Move = moves[0];
+      for (let i = 0; i < moves.length; i++) {
+        const boardCopy = new Uint16Array(board);
+        movePiece(boardCopy, moves[i]);
+        const [newValue] = minimax(
+          boardCopy,
+          !isWhiteTurn,
+          depth - 1,
+          false,
+          stats
+        );
+        if (newValue > value) {
+          value = newValue;
+          move = moves[i];
+        }
+      }
+      return [value, move];
+    }
+  } else {
+    const moves = findAvailableMoves(board, isWhiteTurn);
+    stats.totalNodes += moves.length;
+    if (moves.length === 0) {
+      const [value] = minimax(board, !isWhiteTurn, depth - 1, true, stats);
+      return [value, null];
+    } else {
+      let value = +Infinity;
+      for (let i = 0; i < moves.length; i++) {
+        const boardCopy = new Uint16Array(board);
+        movePiece(boardCopy, moves[i]);
+        const [newValue] = minimax(
+          boardCopy,
+          !isWhiteTurn,
+          depth - 1,
+          true,
+          stats
+        );
+        if (newValue < value) {
+          value = newValue;
+        }
+      }
+      return [value, null];
+    }
+  }
+}
+
 function evaluateBoard(board: ByteBoard): number {
   const whiteAvailableMoves = findAvailableMoves(board, true);
   const blackAvailableMoves = findAvailableMoves(board, false);
 
   const score = calculateScore(board);
+  if (score[0] === 0) {
+    return -Infinity;
+  } else if (score[1] === 0) {
+    return Infinity;
+  }
   if (whiteAvailableMoves.length === 0 && blackAvailableMoves.length === 0) {
     if (score[0] > score[1]) {
       return Infinity;
@@ -199,7 +271,30 @@ function printByteBoard(board: ByteBoard): void {
 
 const game = new Game();
 game.randomPositioning();
-for (let i = 0; i < 20; i++) {
-  game.randomMove();
+
+while (game.state.stage === GameStage.MovingPieces) {
+  game.printBoard();
+  if (game.state.turn === PlayerColor.Black) {
+    game.randomMove();
+  } else {
+    const byteBoard = convertCellBooardToByteForm(game.state.board);
+    console.time("minimax");
+    const statistics: MinimaxStatistics = { totalNodes: 0 };
+    const [value, move] = minimax(byteBoard, true, 4, true, statistics);
+    console.timeEnd("minimax");
+    console.log("Move: ", move, " with value: ", value);
+    console.log("Nodes reiewed: ", statistics.totalNodes);
+    if (move !== null) {
+      game.movePiece(PlayerColor.White, move[0], move[1]);
+    }
+  }
 }
+
+if (game.state.stage !== GameStage.GameOver) {
+  throw Error();
+}
+
+console.log("Final position: ");
 game.printBoard();
+
+console.log("Winner: ", game.state.winner);
