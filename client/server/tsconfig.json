@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "node",
+    "allowJs": false,
+    "noEmit": true,
+    "strict": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["src", "types"]
+}

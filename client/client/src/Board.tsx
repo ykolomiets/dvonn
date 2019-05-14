@@ -2,9 +2,9 @@
 import React from 'react';
 import { css, jsx } from '@emotion/core';
 import boardImage from '../assets/images/board.svg';
-import { Cell, PieceColor } from '../../common/src/core/cell';
-import Piece from './Piece';
-import { AvailableMoves, PlayerColor } from '../../common/src/core/dvonn';
+import { Cell, PieceColor } from '../../../common/src/core/cell';
+import Piece, { PieceStatus } from './Piece';
+import { AvailableMoves, PlayerColor } from '../../../common/src/core/dvonn';
 
 interface BoardProps {
   turn: PlayerColor | undefined;
@@ -28,36 +28,45 @@ class Board extends React.Component<BoardProps, BoardState> {
     this.pieceSize = props.size.height / 5;
   }
 
+  private selectPiece(index: number): void {
+    const piece = this.props.board[index];
+    if (piece.state.isEmpty) return;
+    if (
+      piece.state.upperColor === PieceColor.Red ||
+      (piece.state.upperColor === PieceColor.Black && this.props.turn === PlayerColor.White) ||
+      (piece.state.upperColor === PieceColor.White && this.props.turn === PlayerColor.Black)
+    ) {
+      return;
+    }
+    this.setState({
+      selectedPieceIndex: index,
+    });
+  }
+
+  private unselectPiece(): void {
+    this.setState({
+      selectedPieceIndex: -1,
+    });
+  }
+
   private handlePieceClick(index: number): void {
     const piece = this.props.board[index];
     if (piece.state.isEmpty) return;
     if (this.state.selectedPieceIndex === -1) {
-      if (
-        piece.state.upperColor === PieceColor.Red ||
-        (piece.state.upperColor === PieceColor.Black && this.props.turn === PlayerColor.White) ||
-        (piece.state.upperColor === PieceColor.White && this.props.turn === PlayerColor.Black)
-      ) {
-        return;
-      }
-      this.setState({
-        selectedPieceIndex: index,
-      });
+      this.selectPiece(index);
     } else {
       if (piece.index === this.state.selectedPieceIndex) {
-        this.setState({
-          selectedPieceIndex: -1,
-        });
+        this.unselectPiece();
         return;
       }
 
-      let availableMoves: number[] = [];
-      if (this.props.availableMoves && this.props.availableMoves[this.state.selectedPieceIndex]) {
-        availableMoves = this.props.availableMoves[this.state.selectedPieceIndex];
+      const selected = this.state.selectedPieceIndex;
+      const availableMoves = this.props.availableMoves;
+      if (!availableMoves || !availableMoves[selected] || !availableMoves[selected].includes(index)) {
         this.setState({ selectedPieceIndex: -1 });
-        if (availableMoves.includes(index)) {
-          console.log(`Move: ${this.state.selectedPieceIndex} -> ${index}`);
-          this.props.onMove(this.state.selectedPieceIndex, index);
-        }
+      } else {
+        console.log(`Move: ${this.state.selectedPieceIndex} -> ${index}`);
+        this.props.onMove(this.state.selectedPieceIndex, index);
       }
     }
   }
@@ -82,16 +91,21 @@ class Board extends React.Component<BoardProps, BoardState> {
       >
         {this.props.board.map(cell => {
           if (cell.state.isEmpty) return null;
+          let status: PieceStatus = PieceStatus.None;
+          if (this.state.selectedPieceIndex === cell.index) {
+            status = PieceStatus.Selected;
+          } else if (
+            this.state.selectedPieceIndex !== -1 &&
+            this.state.selectedPieceIndex !== cell.index &&
+            availableMoves.includes(cell.index)
+          ) {
+            status = PieceStatus.Highlighted;
+          }
 
           return (
             <Piece
               key={cell.index}
-              selected={this.state.selectedPieceIndex === cell.index}
-              faded={
-                this.state.selectedPieceIndex !== -1 &&
-                this.state.selectedPieceIndex !== cell.index &&
-                !availableMoves.includes(cell.index)
-              }
+              status={status}
               stackSize={cell.state.stackSize}
               upperColor={cell.state.upperColor}
               containsDvonnPiece={cell.state.containsDvonnPiece}

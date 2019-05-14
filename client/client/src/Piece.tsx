@@ -1,6 +1,12 @@
 import React, { SFC } from 'react';
 import styled from '@emotion/styled';
-import { PieceColor } from '../../common/src/core/cell';
+import { PieceColor } from '../../../common/src/core/cell';
+
+export enum PieceStatus {
+  None,
+  Selected,
+  Highlighted,
+}
 
 interface PieceProps {
   className?: string;
@@ -9,8 +15,7 @@ interface PieceProps {
   containsDvonnPiece: boolean;
   size: number;
   position: { x: number; y: number };
-  selected: boolean;
-  faded: boolean;
+  status: PieceStatus;
   onClick: () => void;
 }
 
@@ -32,9 +37,16 @@ export default styled(Piece)`
   }};
 
   transition: all 100ms ease-in;
-  box-shadow: ${(props: PieceProps) => (props.selected ? '0px 0px 10px 5px green' : 'none')};
-
-  opacity: ${(props: PieceProps) => (props.faded ? '0.2' : '1')};
+  box-shadow: ${(props: PieceProps) => {
+    switch (props.status) {
+      case PieceStatus.None:
+        return 'none';
+      case PieceStatus.Selected:
+        return '0px 0px 10px 5px blue';
+      case PieceStatus.Highlighted:
+        return '0px 0px 10px 10px green';
+    }
+  }};
 
   width: ${(props: PieceProps) => props.size}px;
   height: ${(props: PieceProps) => props.size}px;

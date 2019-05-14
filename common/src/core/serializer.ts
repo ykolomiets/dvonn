@@ -1,4 +1,5 @@
 import { Cell, PieceColor } from './cell';
+import { setNeighbores } from './dvonn';
 
 export function serializeBoard(board: Cell[]): string {
   let res = '';
@@ -25,19 +26,20 @@ export function serializeBoard(board: Cell[]): string {
   return res;
 }
 
-export function deserializeBoard(boardStr: string): Cell[] {
-  function parseColor(colorStr: string): PieceColor {
-    if (colorStr === 'b') {
-      return PieceColor.Black;
-    }
-    if (colorStr === 'w') {
-      return PieceColor.White;
-    }
-    if (colorStr === 'r') {
-      return PieceColor.Red;
-    }
-    throw new Error('Wrong color');
+function parseColor(colorStr: string): PieceColor {
+  if (colorStr === 'b') {
+    return PieceColor.Black;
   }
+  if (colorStr === 'w') {
+    return PieceColor.White;
+  }
+  if (colorStr === 'r') {
+    return PieceColor.Red;
+  }
+  throw new Error('Wrong color');
+}
+
+export function deserializeBoard(boardStr: string): Cell[] {
   const cells = boardStr.split(',');
   if (cells.length !== 50) {
     throw new Error('Broken string');
@@ -66,5 +68,6 @@ export function deserializeBoard(boardStr: string): Cell[] {
     }
     res.push(cell);
   }
+  setNeighbores(res);
   return res;
 }

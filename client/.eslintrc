@@ -7,7 +7,8 @@
     "plugin:prettier/recommended"
   ],
   "rules": {
-    "@typescript-eslint/indent": 0
+    "@typescript-eslint/indent": 0,
+    "no-console": "off"
   },
   "parser": "@typescript-eslint/parser",
   "parserOptions": {

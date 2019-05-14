@@ -17,7 +17,7 @@ export function alphabeta(
   if (maximizingPlayer) {
     const moves = findAvailableMoves(board, isWhiteTurn);
     if (moves.length === 0) {
-      const [value] = alphabeta(evaluateBoard, board, !isWhiteTurn, alpha, beta, depth - 1, false, stats);
+      const [value] = alphabeta(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, false, stats);
       return [value, null];
     } else {
       let value = -Infinity;
@@ -43,7 +43,7 @@ export function alphabeta(
   } else {
     const moves = findAvailableMoves(board, isWhiteTurn);
     if (moves.length === 0) {
-      const [value] = alphabeta(evaluateBoard, board, !isWhiteTurn, alpha, beta, depth - 1, true, stats);
+      const [value] = alphabeta(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, true, stats);
       return [value, null];
     } else {
       let value = +Infinity;

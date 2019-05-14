@@ -336,7 +336,6 @@ export class Game {
       const turn = this.state.turn;
       const move = getBestMove(this.state.board, turn === PlayerColor.White);
       if (move) {
-        console.log('Move', move);
         this.movePiece(turn, move[0], move[1]);
       }
     }

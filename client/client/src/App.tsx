@@ -1,6 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Game as DvonnLogic, GameState as DvonnLogicState, GameStage, PlayerColor } from '../../common/src/core/dvonn';
+import {
+  Game as DvonnLogic,
+  GameState as DvonnLogicState,
+  GameStage,
+  PlayerColor,
+} from '../../../common/src/core/dvonn';
 import Board from './Board';
 
 type GameState = {
