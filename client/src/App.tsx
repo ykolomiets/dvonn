@@ -1,11 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {
-  Game as DvonnLogic,
-  GameState as DvonnLogicState,
-  GameStage,
-  PlayerColor,
-} from '../../../common/src/core/dvonn';
+import { Game as DvonnLogic, GameState as DvonnLogicState, GameStage, PlayerColor } from '../../common/core/dvonn';
 import Board from './Board';
 
 type GameState = {
@@ -67,7 +62,7 @@ class Game extends React.Component<{}, GameState> {
         availableMoves = this.logic.getAvailableMoves(this.state.coreLogicState.turn);
         break;
       case GameStage.GameOver:
-        stage = 'GameOver';
+        stage = `GameOver: ${this.state.coreLogicState.winner === PlayerColor.White ? 'white' : 'black'} won`;
         break;
     }
     return (

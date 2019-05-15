@@ -2,9 +2,9 @@
 import React from 'react';
 import { css, jsx } from '@emotion/core';
 import boardImage from '../assets/images/board.svg';
-import { Cell, PieceColor } from '../../../common/src/core/cell';
+import { Cell, PieceColor } from '../../common/core/cell';
 import Piece, { PieceStatus } from './Piece';
-import { AvailableMoves, PlayerColor } from '../../../common/src/core/dvonn';
+import { AvailableMoves, PlayerColor } from '../../common/core/dvonn';
 
 interface BoardProps {
   turn: PlayerColor | undefined;
@@ -62,12 +62,11 @@ class Board extends React.Component<BoardProps, BoardState> {
 
       const selected = this.state.selectedPieceIndex;
       const availableMoves = this.props.availableMoves;
-      if (!availableMoves || !availableMoves[selected] || !availableMoves[selected].includes(index)) {
-        this.setState({ selectedPieceIndex: -1 });
-      } else {
+      if (availableMoves && availableMoves[selected] && availableMoves[selected].includes(index)) {
         console.log(`Move: ${this.state.selectedPieceIndex} -> ${index}`);
         this.props.onMove(this.state.selectedPieceIndex, index);
       }
+      this.setState({ selectedPieceIndex: -1 });
     }
   }
 
