@@ -1,5 +1,4 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { Game as DvonnLogic, GameState as DvonnLogicState, GameStage, PlayerColor } from '../../common/core/dvonn';
 import Board from './Board';
 
@@ -87,4 +86,4 @@ class Game extends React.Component<{}, GameState> {
   }
 }
 
-ReactDOM.render(<Game />, document.getElementById('root'));
+export default Game;
