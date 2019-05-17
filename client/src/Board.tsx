@@ -4,15 +4,35 @@ import { css, jsx } from '@emotion/core';
 import boardImage from '../assets/images/board.svg';
 import { Cell, PieceColor } from '../../common/core/cell';
 import Piece, { PieceStatus } from './Piece';
-import { AvailableMoves, PlayerColor } from '../../common/core/dvonn';
+import { AvailableMoves, PlayerColor, GameStage } from '../../common/core/dvonn';
 
-interface BoardProps {
-  turn: PlayerColor | undefined;
-  board: Cell[];
-  availableMoves: AvailableMoves | null;
-  size: { width: number; height: number };
-  onMove: (from: number, to: number) => void;
+export enum BoardStage {
+  Waiting,
+  PlacingPieces,
+  MovingPieces,
 }
+
+type BoardProps =
+  | {
+      stage: BoardStage.Waiting;
+      size: { width: number; height: number };
+      board: Cell[];
+    }
+  | {
+      stage: BoardStage.PlacingPieces;
+      turn: PlayerColor;
+      size: { width: number; height: number };
+      board: Cell[];
+      onPlace: (to: number) => void;
+    }
+  | {
+      stage: BoardStage.MovingPieces;
+      turn: PlayerColor;
+      size: { width: number; height: number };
+      board: Cell[];
+      availableMoves: AvailableMoves | null;
+      onMove: (from: number, to: number) => void;
+    };
 
 interface BoardState {
   selectedPieceIndex: number;
@@ -29,6 +49,8 @@ class Board extends React.Component<BoardProps, BoardState> {
   }
 
   private selectPiece(index: number): void {
+    if (this.props.stage !== BoardStage.MovingPieces) return;
+
     const piece = this.props.board[index];
     if (piece.state.isEmpty) return;
     if (
@@ -50,6 +72,8 @@ class Board extends React.Component<BoardProps, BoardState> {
   }
 
   private handlePieceClick(index: number): void {
+    if (this.props.stage !== BoardStage.MovingPieces) return;
+
     const piece = this.props.board[index];
     if (piece.state.isEmpty) return;
     if (this.state.selectedPieceIndex === -1) {
@@ -70,12 +94,69 @@ class Board extends React.Component<BoardProps, BoardState> {
     }
   }
 
-  public render() {
-    let availableMoves: number[] = [];
+  private renderWaitingPieces() {
+    if (this.props.stage !== BoardStage.Waiting) return <h1>Error</h1>;
 
+    return this.props.board.map(cell => {
+      if (cell.state.isEmpty) return null;
+      return (
+        <Piece
+          key={cell.index}
+          status={PieceStatus.None}
+          stackSize={cell.state.stackSize}
+          upperColor={cell.state.upperColor}
+          containsDvonnPiece={cell.state.containsDvonnPiece}
+          size={this.pieceSize}
+          position={this.getPiecePosition(cell.index)}
+          onClick={() => {}}
+        />
+      );
+    });
+  }
+
+  private renderMovingPieces() {
+    if (this.props.stage !== BoardStage.MovingPieces) return <h1>Error</h1>;
+
+    let availableMoves: number[] = [];
     if (this.props.availableMoves && this.props.availableMoves[this.state.selectedPieceIndex]) {
-      //TODO:  remove this shit
       availableMoves = this.props.availableMoves[this.state.selectedPieceIndex];
+    }
+    return this.props.board.map(cell => {
+      if (cell.state.isEmpty) return null;
+      let status: PieceStatus = PieceStatus.None;
+      if (this.state.selectedPieceIndex === cell.index) {
+        status = PieceStatus.Selected;
+      } else if (
+        this.state.selectedPieceIndex !== -1 &&
+        this.state.selectedPieceIndex !== cell.index &&
+        availableMoves.includes(cell.index)
+      ) {
+        status = PieceStatus.Highlighted;
+      }
+
+      return (
+        <Piece
+          key={cell.index}
+          status={status}
+          stackSize={cell.state.stackSize}
+          upperColor={cell.state.upperColor}
+          containsDvonnPiece={cell.state.containsDvonnPiece}
+          size={this.pieceSize}
+          position={this.getPiecePosition(cell.index)}
+          onClick={() => {
+            this.handlePieceClick(cell.index);
+          }}
+        />
+      );
+    });
+  }
+
+  public render() {
+    let pieces;
+    if (this.props.stage === BoardStage.Waiting) {
+      pieces = this.renderWaitingPieces();
+    } else if (this.props.stage === BoardStage.MovingPieces) {
+      pieces = this.renderMovingPieces();
     }
 
     return (
@@ -88,34 +169,7 @@ class Board extends React.Component<BoardProps, BoardState> {
           background-size: contain;
         `}
       >
-        {this.props.board.map(cell => {
-          if (cell.state.isEmpty) return null;
-          let status: PieceStatus = PieceStatus.None;
-          if (this.state.selectedPieceIndex === cell.index) {
-            status = PieceStatus.Selected;
-          } else if (
-            this.state.selectedPieceIndex !== -1 &&
-            this.state.selectedPieceIndex !== cell.index &&
-            availableMoves.includes(cell.index)
-          ) {
-            status = PieceStatus.Highlighted;
-          }
-
-          return (
-            <Piece
-              key={cell.index}
-              status={status}
-              stackSize={cell.state.stackSize}
-              upperColor={cell.state.upperColor}
-              containsDvonnPiece={cell.state.containsDvonnPiece}
-              size={this.pieceSize}
-              position={this.getPiecePosition(cell.index)}
-              onClick={() => {
-                this.handlePieceClick(cell.index);
-              }}
-            />
-          );
-        })}
+        {pieces}
       </div>
     );
   }

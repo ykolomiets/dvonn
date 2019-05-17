@@ -7,11 +7,11 @@
     "format": "prettier --write \"{client,server, common}/**/*.{ts,tsx,css,json}\"",
     "client-lint": "eslint --ext .ts ./client/src",
     "client-check-types": "tsc -p client/",
-    "client-build": "yarn client-check-types && parcel build client/src/index.html -d client-build",
+    "client-build": "parcel build client/src/index.html -d client-build",
     "server-check-types": "tsc -p server/",
-    "server-build": "yarn server-check-types && babel server/src/ -d server-build -x .ts -s",
+    "server-build": "babel server -d server-build/server -x .ts -s && babel common -d server-build/common -x .ts -s",
     "build": "yarn client-build && yarn server-build",
-    "start": "yarn build && node server-build/index.js",
+    "start": "yarn build && node server-build/server/src/index.js",
     "test": "jest"
   },
   "devDependencies": {
@@ -27,6 +27,8 @@
     "@types/node": "^12.0.1",
     "@types/react": "^16.8.2",
     "@types/react-dom": "^16.8.0",
+    "@types/react-router-dom": "^4.3.3",
+    "@types/socket.io": "^2.1.2",
     "@typescript-eslint/eslint-plugin": "^1.4.2",
     "@typescript-eslint/parser": "^1.4.2",
     "eslint": "^5.15.3",
@@ -46,9 +48,13 @@
   "dependencies": {
     "@emotion/core": "^10.0.9",
     "@emotion/styled": "^10.0.9",
+    "@types/socket.io-client": "^1.4.32",
     "babel-plugin-emotion": "^10.0.9",
     "express": "^4.16.4",
     "react": "^16.8.4",
-    "react-dom": "^16.8.4"
+    "react-dom": "^16.8.4",
+    "react-router-dom": "^5.0.0",
+    "socket.io": "^2.2.0",
+    "socket.io-client": "^2.2.0"
   }
 }

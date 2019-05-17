@@ -5,7 +5,6 @@ import { serializeBoard, deserializeBoard } from './serializer';
 import { shuffleArray } from './utils';
 import { movesMap } from './movesMap';
 import { findComponents } from './findComponents';
-import { getBestMove } from '../ai/ai';
 
 export enum PlayerColor {
   White,
@@ -48,7 +47,7 @@ export type GameState =
       winner: PlayerColor;
     };
 
-type SerializedGameState =
+export type SerializedGameState =
   | {
       stage: GameStage.PlacingPieces;
       turn: PlayerColor;
@@ -85,12 +84,39 @@ function serializeGameState(state: GameState): SerializedGameState {
         winner: state.winner,
         board: serializeBoard(state.board),
       };
+    default:
+      throw Error();
+  }
+}
+
+function deserializeGameState(state: SerializedGameState): GameState {
+  switch (state.stage) {
+    case GameStage.PlacingPieces:
+      return {
+        stage: GameStage.PlacingPieces,
+        turn: state.turn,
+        board: deserializeBoard(state.board),
+      };
+    case GameStage.MovingPieces:
+      return {
+        stage: GameStage.MovingPieces,
+        turn: state.turn,
+        board: deserializeBoard(state.board),
+      };
+    case GameStage.GameOver:
+      return {
+        stage: GameStage.GameOver,
+        winner: state.winner,
+        board: deserializeBoard(state.board),
+      };
+    default:
+      throw Error();
   }
 }
 
 function createEmptyBoard(): Cell[] {
   const board: Cell[] = [];
-  for (let i = 0; i < 49; i++) {
+  for (let i = 0; i < 49; i += 1) {
     board.push({
       index: i,
       state: {
@@ -110,38 +136,36 @@ export interface AvailableMoves {
 function getAvailableMoves(board: Cell[], player: PlayerColor): AvailableMoves | null {
   let movesExists = false;
   const moves: AvailableMoves = {};
-  for (let i = 0; i < 49; i++) {
+  for (let i = 0; i < 49; i += 1) {
     const cell = board[i];
     const playerPieceColor = player === PlayerColor.White ? PieceColor.White : PieceColor.Black;
     if (!cell.state.isEmpty && cell.state.upperColor === playerPieceColor && cell.state.stackSize <= 10) {
       const neighbors = movesMap[i][0];
       let surrounded = true;
-      for (let direction = 0; direction < 6; direction++) {
+      for (let direction = 0; direction < 6; direction += 1) {
         const index = neighbors[direction];
         if (index === -1 || board[index].state.isEmpty) {
           surrounded = false;
           break;
         }
       }
-      if (surrounded) {
-        continue;
-      }
-
-      const movesFromMap = movesMap[i][cell.state.stackSize - 1];
-      if (movesFromMap) {
-        const movesForCell: number[] = [];
-        for (let direction = 0; direction < 6; direction++) {
-          const cellIndex = movesFromMap[direction];
-          if (cellIndex !== -1) {
-            const targetCell = board[cellIndex];
-            if (!targetCell.state.isEmpty) {
-              movesForCell.push(cellIndex);
+      if (!surrounded) {
+        const movesFromMap = movesMap[i][cell.state.stackSize - 1];
+        if (movesFromMap) {
+          const movesForCell: number[] = [];
+          for (let direction = 0; direction < 6; direction += 1) {
+            const cellIndex = movesFromMap[direction];
+            if (cellIndex !== -1) {
+              const targetCell = board[cellIndex];
+              if (!targetCell.state.isEmpty) {
+                movesForCell.push(cellIndex);
+              }
             }
           }
-        }
-        if (movesForCell.length > 0) {
-          movesExists = true;
-          moves[i] = movesForCell;
+          if (movesForCell.length > 0) {
+            movesExists = true;
+            moves[i] = movesForCell;
+          }
         }
       }
     }
@@ -151,6 +175,7 @@ function getAvailableMoves(board: Cell[], player: PlayerColor): AvailableMoves |
 
 export class Game {
   private history: SerializedGameState[] = [];
+
   public state: GameState; // TODO: make private and expose only getters;
 
   public constructor() {
@@ -159,6 +184,14 @@ export class Game {
       turn: PlayerColor.White,
       board: createEmptyBoard(),
     };
+  }
+
+  public setSerializedState(state: SerializedGameState): void {
+    this.state = deserializeGameState(state);
+  }
+
+  public getSerializedState(): SerializedGameState {
+    return serializeGameState(this.state);
   }
 
   public placePiece(player: PlayerColor, pos: number): void {
@@ -214,12 +247,12 @@ export class Game {
 
   public randomPositioning(): void {
     const positions: number[] = [];
-    for (let i = 0; i < 49; i++) {
+    for (let i = 0; i < 49; i += 1) {
       positions.push(i);
     }
     shuffleArray(positions);
     let turn: PlayerColor = PlayerColor.White;
-    for (let i = 0; i < 49; i++) {
+    for (let i = 0; i < 49; i += 1) {
       this.placePiece(turn, positions[i]);
       turn = turn === PlayerColor.White ? PlayerColor.Black : PlayerColor.White;
     }
@@ -275,7 +308,7 @@ export class Game {
     const components = findComponents(this.state.board);
     components.forEach(component => {
       let containsDvonnPiece = false;
-      for (let i = 0; i < component.length; i++) {
+      for (let i = 0; i < component.length; i += 1) {
         const cell = component[i];
         if (!cell.state.isEmpty && cell.state.containsDvonnPiece) {
           containsDvonnPiece = true;
@@ -295,7 +328,7 @@ export class Game {
       [PlayerColor.White]: 0,
       [PlayerColor.Black]: 0,
     };
-    for (let i = 0; i < 49; i++) {
+    for (let i = 0; i < 49; i += 1) {
       const cell = this.state.board[i];
       if (!cell.state.isEmpty) {
         if (cell.state.upperColor === PieceColor.White) {
@@ -319,7 +352,7 @@ export class Game {
 
   public randomMove(): void {
     if (this.state.stage === GameStage.MovingPieces) {
-      const turn = this.state.turn;
+      const { turn } = this.state;
       const availableMoves = this.getAvailableMoves(turn);
       if (availableMoves) {
         const startPositions = Object.keys(availableMoves);
@@ -327,16 +360,6 @@ export class Game {
         const targetPositions = availableMoves[startPos];
         const targetPos = targetPositions[Math.floor(Math.random() * targetPositions.length)];
         this.movePiece(turn, startPos, targetPos);
-      }
-    }
-  }
-
-  public aiMove(): void {
-    if (this.state.stage === GameStage.MovingPieces) {
-      const turn = this.state.turn;
-      const move = getBestMove(this.state.board, turn === PlayerColor.White);
-      if (move) {
-        this.movePiece(turn, move[0], move[1]);
       }
     }
   }
@@ -353,6 +376,8 @@ export class Game {
           };
           setNeighbores(this.state.board);
           break;
+        default:
+          throw Error();
       }
     }
   }

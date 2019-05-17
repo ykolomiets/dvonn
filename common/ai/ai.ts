@@ -1,3 +1,5 @@
+/* eslint-disable no-bitwise */
+/* eslint-disable no-else-return */
 import { Cell } from '../core/cell';
 import {
   ByteBoard,
@@ -14,7 +16,7 @@ import { alphabeta } from './alphabeta';
 function calculateScore(board: ByteBoard): [number, number] {
   const score: [number, number] = [0, 0];
   for (let i = 0; i < TOTAL_CELLS; i++) {
-    let cell = board[i];
+    const cell = board[i];
     if (cell === 0) {
       continue;
     }
@@ -36,7 +38,8 @@ function evaluateBoard(board: ByteBoard): number {
   const score = calculateScore(board);
   if (score[0] === 0) {
     return -Infinity;
-  } else if (score[1] === 0) {
+  }
+  if (score[1] === 0) {
     return Infinity;
   }
   if (whiteAvailableMoves.length === 0 && blackAvailableMoves.length === 0) {
@@ -51,11 +54,11 @@ function evaluateBoard(board: ByteBoard): number {
   return score[0] - score[1];
 }
 
-export function getBestMove(board: Cell[], isWhite: boolean): Move | null {
+export default function getBestMove(board: Cell[], isWhite: boolean, depth: number): Move | null {
   const byteBoard = convertCellBooardToByteForm(board);
   const stats = { observedNodes: 0 };
-  const evalFunc = isWhite ? evaluateBoard : (board: ByteBoard) => -evaluateBoard(board);
-  const [, move] = alphabeta(evalFunc, byteBoard, isWhite, 4, -Infinity, +Infinity, true, stats);
+  const evalFunc = isWhite ? evaluateBoard : (b: ByteBoard) => -evaluateBoard(b);
+  const [, move] = alphabeta(evalFunc, byteBoard, isWhite, depth, -Infinity, +Infinity, true, stats);
   console.log('Nodes explored: ', stats.observedNodes);
   return move;
 }

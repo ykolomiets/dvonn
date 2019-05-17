@@ -9,7 +9,8 @@ function Root() {
   return (
     <Router>
       <Route exact path="/" component={Menu} />
-      <Route exact path="/game-ai" component={Game} />
+      <Route exact path="/game-real" component={() => <Game realPlayer={true} />} />
+      <Route exact path="/game-ai" component={() => <Game realPlayer={false} />} />
       <Route exact path="/rules" component={Rules} />
     </Router>
   );

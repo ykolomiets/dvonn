@@ -1,7 +1,7 @@
 /** @jsx jsx */
 import React from 'react';
 import styled from '@emotion/styled';
-import { css, jsx } from '@emotion/core';
+import { jsx } from '@emotion/core';
 import { Link } from 'react-router-dom';
 
 interface MenuProps {
@@ -13,8 +13,8 @@ class Menu extends React.Component<MenuProps> {
     return (
       <div className={this.props.className}>
         <div className="menu-body">
-          <Link to="/" className="menu-link">
-            Play with friend
+          <Link to="/game-real" className="menu-link">
+            Play with real
           </Link>
           <Link to="/game-ai" className="menu-link">
             Play with AI
