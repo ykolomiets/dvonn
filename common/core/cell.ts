@@ -4,16 +4,18 @@ export enum PieceColor {
   Black = 'b',
 }
 
-export type CellState =
-  | {
-      isEmpty: true;
-    }
-  | {
-      isEmpty: false;
-      stackSize: number;
-      upperColor: PieceColor;
-      containsDvonnPiece: boolean;
-    };
+export interface CellEmptyState {
+  isEmpty: true;
+}
+
+export interface CellNotEmptyState {
+  isEmpty: false;
+  stackSize: number;
+  upperColor: PieceColor;
+  containsDvonnPiece: boolean;
+}
+
+export type CellState = CellEmptyState | CellNotEmptyState;
 
 export enum Direction {
   NorthEast = 0,

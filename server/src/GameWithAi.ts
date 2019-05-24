@@ -1,5 +1,6 @@
 import { Game as DvonnLogic, PlayerColor, GameStage } from '../../common/core/dvonn';
 import getBestMove from '../../common/ai/ai';
+import db, { GameInfo } from './db';
 
 class GameWithAi {
   private socket: SocketIO.Socket;
@@ -12,13 +13,24 @@ class GameWithAi {
 
   private started: boolean;
 
+  private info: GameInfo;
+
   public constructor(socket: SocketIO.Socket) {
     this.socket = socket;
     this.playerTurn = Math.random() > 0.5 ? PlayerColor.White : PlayerColor.Black;
     this.aiTurn = this.playerTurn === PlayerColor.White ? PlayerColor.Black : PlayerColor.White;
     this.logic = new DvonnLogic();
     this.logic.randomPositioning();
-    this.socket.emit('state', this.logic.getSerializedState());
+
+    const serializedState = this.logic.getSerializedState();
+
+    this.info = {
+      startPosition: serializedState.board,
+      moves: [],
+      winner: PlayerColor.White,
+    };
+
+    this.socket.emit('state', serializedState);
     this.socket.emit('color', this.playerTurn);
     this.socket.on('move', move => this.onMove(move));
     this.started = false;
@@ -38,6 +50,7 @@ class GameWithAi {
     }
     try {
       this.logic.movePiece(this.playerTurn, move[0], move[1]);
+      this.info.moves.push(move);
       this.next();
     } catch (e) {
       this.socket.emit('state', this.logic.getSerializedState());
@@ -46,19 +59,26 @@ class GameWithAi {
 
   private next(): void {
     if (this.logic.state.stage === GameStage.MovingPieces) {
-      if (this.logic.state.turn !== this.playerTurn) {
+      if (this.logic.state.turn === this.aiTurn) {
         const move = getBestMove(this.logic.state.board, this.aiTurn === PlayerColor.White, 4);
         if (move) {
           this.logic.movePiece(this.aiTurn, move[0], move[1]);
-          this.socket.emit('move', move, this.logic.getSerializedState());
-          if (this.logic.state.turn === this.aiTurn) {
-            setTimeout(() => this.next(), 2000);
-          }
+          this.info.moves.push(move);
+          setTimeout(() => {
+            this.socket.emit('opponentMove', move, this.logic.getSerializedState());
+            this.next();
+          }, 1000);
         }
       }
     } else if (this.logic.state.stage === GameStage.GameOver) {
-      this.socket.disconnect();
+      this.info.winner = this.logic.state.winner;
+      this.finish();
     }
+  }
+
+  private finish(): void {
+    this.socket.disconnect();
+    db.saveGameWithAi(this.info, this.aiTurn);
   }
 }
 

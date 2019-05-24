@@ -8,9 +8,17 @@
   ],
   "rules": {
     "@typescript-eslint/indent": 0,
-    "no-console": "off"
+    "no-console": "off",
+    "no-param-reassign": "warn"
   },
   "parser": "@typescript-eslint/parser",
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+      }
+    }
+  },
   "parserOptions": {
     "ecmaFeatures": {
       "jsx": true

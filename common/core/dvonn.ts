@@ -173,6 +173,11 @@ function getAvailableMoves(board: Cell[], player: PlayerColor): AvailableMoves |
   return movesExists ? moves : null;
 }
 
+export interface Score {
+  [PlayerColor.Black]: number;
+  [PlayerColor.White]: number;
+}
+
 export class Game {
   private history: SerializedGameState[] = [];
 
@@ -265,20 +270,24 @@ export class Game {
     return getAvailableMoves(this.state.board, player);
   }
 
-  public movePiece(player: PlayerColor, startPos: number, targetPos: number): void {
+  public movePiece(player: PlayerColor, startPos: number, targetPos: number): boolean {
     if (this.state.stage !== GameStage.MovingPieces) {
-      throw new Error('Not moving pieces stage');
+      console.log('Not moving pieces stage');
+      return false;
     }
     if (this.state.turn !== player) {
-      throw new Error('Another player turn');
+      console.log('Another player turn');
+      return false;
     }
     if (startPos < 0 || startPos >= 49 || (targetPos < 0 || targetPos >= 49)) {
-      throw new Error('Positions is not in range [0, 48]');
+      console.log('Positions is not in range [0, 48]');
+      return false;
     }
 
     const availableMoves = getAvailableMoves(this.state.board, player);
     if (!availableMoves || !availableMoves[startPos] || !availableMoves[startPos].includes(targetPos)) {
-      throw new Error('Invalid move');
+      console.log('Invalid move');
+      return false;
     }
     this.history.push(serializeGameState(this.state));
 
@@ -297,11 +306,17 @@ export class Game {
     const opponent: PlayerColor = player === PlayerColor.White ? PlayerColor.Black : PlayerColor.White;
     if (getAvailableMoves(this.state.board, opponent)) {
       this.state.turn = opponent;
-      return;
-    }
-    if (!getAvailableMoves(this.state.board, player)) {
+    } else if (!getAvailableMoves(this.state.board, player)) {
       this.gameOver();
     }
+    return true;
+  }
+
+  public getPreviousBoard(): Cell[] {
+    if (this.history.length === 0) {
+      throw new Error();
+    }
+    return deserializeBoard(this.history[this.history.length - 1].board);
   }
 
   private checkConnectivity(): void {
@@ -324,20 +339,7 @@ export class Game {
   }
 
   private gameOver(): void {
-    const score = {
-      [PlayerColor.White]: 0,
-      [PlayerColor.Black]: 0,
-    };
-    for (let i = 0; i < 49; i += 1) {
-      const cell = this.state.board[i];
-      if (!cell.state.isEmpty) {
-        if (cell.state.upperColor === PieceColor.White) {
-          score[PlayerColor.White] += cell.state.stackSize;
-        } else if (cell.state.upperColor === PieceColor.Black) {
-          score[PlayerColor.Black] += cell.state.stackSize;
-        }
-      }
-    }
+    const score = this.getScore();
     const winner = score[PlayerColor.White] > score[PlayerColor.Black] ? PlayerColor.White : PlayerColor.Black;
     this.state = {
       stage: GameStage.GameOver,
@@ -380,5 +382,23 @@ export class Game {
           throw Error();
       }
     }
+  }
+
+  public getScore(): Score {
+    const score = {
+      [PlayerColor.White]: 0,
+      [PlayerColor.Black]: 0,
+    };
+    for (let i = 0; i < 49; i += 1) {
+      const cell = this.state.board[i];
+      if (!cell.state.isEmpty) {
+        if (cell.state.upperColor === PieceColor.White) {
+          score[PlayerColor.White] += cell.state.stackSize;
+        } else if (cell.state.upperColor === PieceColor.Black) {
+          score[PlayerColor.Black] += cell.state.stackSize;
+        }
+      }
+    }
+    return score;
   }
 }

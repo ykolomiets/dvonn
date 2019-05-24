@@ -1,4 +1,5 @@
 import { Game as DvonnLogic, PlayerColor, GameStage } from '../../common/core/dvonn';
+import db, { GameInfo } from './db';
 
 interface Player {
   color: PlayerColor;
@@ -14,6 +15,8 @@ class GameWithTwoPlayers {
 
   private started: boolean;
 
+  private info: GameInfo;
+
   public constructor(socket1: SocketIO.Socket, socket2: SocketIO.Socket) {
     this.player1 = {
       color: Math.random() > 0.5 ? PlayerColor.White : PlayerColor.Black,
@@ -26,6 +29,11 @@ class GameWithTwoPlayers {
     this.logic = new DvonnLogic();
     this.logic.randomPositioning();
     const state = this.logic.getSerializedState();
+    this.info = {
+      startPosition: state.board,
+      moves: [],
+      winner: PlayerColor.White,
+    };
     this.player1.socket.emit('state', state);
     this.player2.socket.emit('state', state);
     this.player1.socket.emit('color', this.player1.color);
@@ -62,15 +70,18 @@ class GameWithTwoPlayers {
     } catch (e) {
       player.socket.emit('state', this.logic.getSerializedState());
     }
-    opponent.socket.emit('move', move, this.logic.getSerializedState());
-    this.checkState();
+    opponent.socket.emit('opponentMove', move, this.logic.getSerializedState());
+    this.info.moves.push(move);
+    if (this.logic.state.stage === GameStage.GameOver) {
+      this.info.winner = this.logic.state.winner;
+      this.finish();
+    }
   }
 
-  private checkState(): void {
-    if (this.logic.state.stage === GameStage.GameOver) {
-      this.player1.socket.disconnect(true);
-      this.player2.socket.disconnect(true);
-    }
+  private finish(): void {
+    this.player1.socket.disconnect(true);
+    this.player2.socket.disconnect(true);
+    db.saveGamePvP(this.info);
   }
 }
 

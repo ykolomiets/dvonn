@@ -59,6 +59,5 @@ export default function getBestMove(board: Cell[], isWhite: boolean, depth: numb
   const stats = { observedNodes: 0 };
   const evalFunc = isWhite ? evaluateBoard : (b: ByteBoard) => -evaluateBoard(b);
   const [, move] = alphabeta(evalFunc, byteBoard, isWhite, depth, -Infinity, +Infinity, true, stats);
-  console.log('Nodes explored: ', stats.observedNodes);
   return move;
 }

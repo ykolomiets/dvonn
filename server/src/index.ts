@@ -1,8 +1,12 @@
+import 'dotenv/config';
 import express from 'express';
 import ioServer from 'socket.io';
 import { createServer } from 'http';
 import GameWithTwoPlayers from './GameWithTwoPlayers';
 import GameWithAi from './GameWithAi';
+import db from './db';
+
+const { PORT } = process.env;
 
 const app = express();
 const http = createServer(app);
@@ -31,6 +35,12 @@ io.of('real').on('connection', socket => {
   }
 });
 
-http.listen(3000, () => {
-  console.log('Listening on port 3000!');
+db.connect(err => {
+  if (err) {
+    console.log('Connection to db failed');
+    return;
+  }
+  http.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}!`);
+  });
 });
