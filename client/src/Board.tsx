@@ -27,6 +27,7 @@ interface BoardPlacingProps {
   size: { width: number; height: number };
   stage: BoardStage.PlacingPieces;
   turn: PlayerColor;
+  piece: PieceColor;
   board: Cell[];
   onPlace: (to: number) => void;
 }
@@ -75,6 +76,8 @@ class Board extends React.Component<BoardProps, BoardState> {
   }
 
   private unselectPiece(): void {
+    if (this.props.stage !== BoardStage.MovingPieces) return;
+
     this.setState({
       selectedPieceIndex: -1,
     });

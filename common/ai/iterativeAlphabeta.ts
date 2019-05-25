@@ -11,14 +11,15 @@ function alphabetaMax(
   depth: number,
   alpha: number,
   beta: number,
+  timeout: number,
   stats: { observedNodes: number }
 ): [number, Move | null] {
-  if (depth === 0) {
+  if (depth === 0 || Date.now() > timeout) {
     return [evaluateBoard(board), null];
   }
   const moves = findAvailableMoves(board, isWhiteTurn);
   if (moves.length === 0) {
-    const [value] = alphabetaMax(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, stats);
+    const [value] = alphabetaMax(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, timeout, stats);
     return [value, null];
   } else {
     let value = -Infinity;
@@ -28,7 +29,7 @@ function alphabetaMax(
       stats.observedNodes += 1;
       boardCopy.set(board);
       movePiece(boardCopy, moves[i]);
-      const [newValue] = alphabetaMin(evaluateBoard, boardCopy, !isWhiteTurn, depth - 1, alpha, beta, stats);
+      const [newValue] = alphabetaMin(evaluateBoard, boardCopy, !isWhiteTurn, depth - 1, alpha, beta, timeout, stats);
       if (newValue > value) {
         value = newValue;
         move = moves[i];
@@ -51,14 +52,15 @@ function alphabetaMin(
   depth: number,
   alpha: number,
   beta: number,
+  timeout: number,
   stats: { observedNodes: number }
 ): [number, Move | null] {
-  if (depth === 0) {
+  if (depth === 0 || Date.now() > timeout) {
     return [evaluateBoard(board), null];
   }
   const moves = findAvailableMoves(board, isWhiteTurn);
   if (moves.length === 0) {
-    const [value] = alphabetaMax(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, stats);
+    const [value] = alphabetaMax(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, timeout, stats);
     return [value, null];
   } else {
     let value = +Infinity;
@@ -67,7 +69,7 @@ function alphabetaMin(
       stats.observedNodes += 1;
       boardCopy.set(board);
       movePiece(boardCopy, moves[i]);
-      const [newValue] = alphabetaMax(evaluateBoard, boardCopy, !isWhiteTurn, depth - 1, alpha, beta, stats);
+      const [newValue] = alphabetaMax(evaluateBoard, boardCopy, !isWhiteTurn, depth - 1, alpha, beta, timeout, stats);
       if (newValue < value) {
         value = newValue;
       }
@@ -86,12 +88,35 @@ export default function alphabeta(
   evaluateBoard: (board: ByteBoard) => number,
   board: ByteBoard,
   isWhiteTurn: boolean,
-  depth: number,
+  maxtime: number,
   stats: { observedNodes: number }
 ): Move {
-  const [, move] = alphabetaMax(evaluateBoard, board, isWhiteTurn, depth, -Infinity, +Infinity, stats);
-  if (!move) {
+  let res: Move | null = null;
+  const timeout = Date.now() + maxtime;
+  let depth = 0;
+  while (Date.now() < timeout) {
+    depth += 1;
+    const iterStats = { observedNodes: 0 };
+    const [value, move] = alphabetaMax(
+      evaluateBoard,
+      board,
+      isWhiteTurn,
+      depth,
+      -Infinity,
+      +Infinity,
+      timeout,
+      iterStats
+    );
+    console.log(`Depth ${depth}: ${iterStats.observedNodes} nodes`);
+    stats.observedNodes += iterStats.observedNodes;
+    res = move;
+    if (value === Infinity || value === -Infinity) {
+      break;
+    }
+  }
+  console.log('Max depth: ', depth);
+  if (res === null) {
     throw new Error();
   }
-  return move;
+  return res;
 }

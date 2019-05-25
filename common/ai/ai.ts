@@ -11,11 +11,11 @@ import {
 } from './consts';
 import { findAvailableMoves, Move } from './moves';
 import { convertCellBooardToByteForm } from './byteBoard';
-import { alphabeta } from './alphabeta';
+import alphabeta from './iterativeAlphabeta';
 
 function calculateScore(board: ByteBoard): [number, number] {
   const score: [number, number] = [0, 0];
-  for (let i = 0; i < TOTAL_CELLS; i++) {
+  for (let i = 0; i < TOTAL_CELLS; i += 1) {
     const cell = board[i];
     if (cell === 0) {
       continue;
@@ -58,6 +58,9 @@ export default function getBestMove(board: Cell[], isWhite: boolean, depth: numb
   const byteBoard = convertCellBooardToByteForm(board);
   const stats = { observedNodes: 0 };
   const evalFunc = isWhite ? evaluateBoard : (b: ByteBoard) => -evaluateBoard(b);
-  const [, move] = alphabeta(evalFunc, byteBoard, isWhite, depth, -Infinity, +Infinity, true, stats);
+  console.time('alphabeta');
+  const move = alphabeta(evalFunc, byteBoard, isWhite, 5000, stats);
+  console.timeEnd('alphabeta');
+  console.log('Nodes observed: ', stats.observedNodes);
   return move;
 }
