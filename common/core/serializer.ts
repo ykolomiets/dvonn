@@ -6,8 +6,8 @@ export function serializeBoard(board: Cell[]): string {
   for (let i = 0; i < 49; i++) {
     let cellStr = '';
     const cell = board[i];
-    if (cell.state.isEmpty === false) {
-      switch (cell.state.upperColor) {
+    if (cell.pieceStack) {
+      switch (cell.pieceStack.upperColor) {
         case PieceColor.Black:
           cellStr += 'b';
           break;
@@ -17,11 +17,12 @@ export function serializeBoard(board: Cell[]): string {
         case PieceColor.Red:
           cellStr += 'r';
           break;
+        default:
       }
-      cellStr += cell.state.stackSize;
-      cellStr += cell.state.containsDvonnPiece ? '*' : '';
+      cellStr += cell.pieceStack.stackSize;
+      cellStr += cell.pieceStack.containsDvonnPiece ? '*' : '';
     }
-    res += cellStr + ',';
+    res += `${cellStr},`;
   }
   return res;
 }
@@ -51,17 +52,16 @@ export function deserializeBoard(boardStr: string): Cell[] {
     if (cellStr === '') {
       cell = {
         index: i,
-        state: { isEmpty: true },
+        pieceStack: null,
         neighbors: [null, null, null, null, null, null],
       };
     } else {
       cell = {
         index: i,
-        state: {
-          isEmpty: false,
+        pieceStack: {
           upperColor: parseColor(cellStr[0]),
           containsDvonnPiece: cellStr[cellStr.length - 1] === '*',
-          stackSize: parseInt(cellStr.substr(1)),
+          stackSize: parseInt(cellStr.substr(1), 10),
         },
         neighbors: [null, null, null, null, null, null],
       };

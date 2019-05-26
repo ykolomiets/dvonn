@@ -45,7 +45,6 @@ class Piece extends React.Component<PieceProps> {
   }
 
   public render() {
-    console.log('Render');
     let boxShadow = 'none';
     if (this.props.status === PieceStatus.Selected) {
       boxShadow = '0px 0px 10px 5px blue';

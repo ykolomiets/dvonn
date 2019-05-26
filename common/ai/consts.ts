@@ -8,5 +8,3 @@ export const WHITE_PIECE_ON_TOP = 0b0100000000000000;
 export const DVONN_PIECE_ON_TOP = 0b0110000000000000;
 
 export const TOTAL_CELLS = 49;
-
-export type ByteBoard = Uint16Array;

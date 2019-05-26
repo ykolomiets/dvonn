@@ -1,4 +1,4 @@
-import { Game as DvonnLogic, PlayerColor, GameStage } from '../../common/core/dvonn';
+import { Game as DvonnLogic, PlayerColor, GameStage, GameResult } from '../../common/core/dvonn';
 import db, { GameInfo } from './db';
 
 interface Player {
@@ -32,7 +32,7 @@ class GameWithTwoPlayers {
     this.info = {
       startPosition: state.board,
       moves: [],
-      winner: PlayerColor.White,
+      result: GameResult.Draw,
     };
     this.player1.socket.emit('state', state);
     this.player2.socket.emit('state', state);
@@ -73,7 +73,7 @@ class GameWithTwoPlayers {
     opponent.socket.emit('opponentMove', move, this.logic.getSerializedState());
     this.info.moves.push(move);
     if (this.logic.state.stage === GameStage.GameOver) {
-      this.info.winner = this.logic.state.winner;
+      this.info.result = this.logic.state.result;
       this.finish();
     }
   }

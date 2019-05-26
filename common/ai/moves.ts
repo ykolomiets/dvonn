@@ -1,5 +1,5 @@
+/* eslint-disable no-bitwise */
 import {
-  ByteBoard,
   WHITE_PIECE_ON_TOP,
   BLACK_PIECE_ON_TOP,
   TOTAL_CELLS,
@@ -9,9 +9,9 @@ import {
   DVONN_PIECE_MASK,
 } from './consts';
 import { movesMap } from '../core/movesMap';
-import { checkConnectivity } from './connectivity';
+import checkConnectivity from './connectivity';
+import { Move, ByteBoard } from './types';
 
-export type Move = [number, number];
 export function findAvailableMoves(board: ByteBoard, playerIsWhite: boolean): Move[] {
   const playerMask = playerIsWhite ? WHITE_PIECE_ON_TOP : BLACK_PIECE_ON_TOP;
   const moves: Move[] = [];
@@ -45,23 +45,23 @@ export function movePiece(board: ByteBoard, move: Move): void {
   const startCell = board[startCellIndex];
   let targetCell = board[targetCellIndex];
 
-  //Clear targetCell's top color
+  // Clear targetCell's top color
   targetCell &= ~TOP_PIECE_COLOR_MASK;
-  //Set targetCell's top color equals to startCell's top color
+  // Set targetCell's top color equals to startCell's top color
   targetCell |= startCell & TOP_PIECE_COLOR_MASK;
 
-  //Set targetCell's stack size
+  // Set targetCell's stack size
   const oldStackSize = targetCell & STACK_SIZE_MASK;
   targetCell &= ~STACK_SIZE_MASK;
   targetCell |= oldStackSize + (startCell & STACK_SIZE_MASK);
 
-  //Set dvonnPiece bit
+  // Set dvonnPiece bit
   targetCell |= startCell & DVONN_PIECE_MASK;
 
   board[startCellIndex] = 0;
   board[targetCellIndex] = targetCell;
 
-  //Clear surrounded bit of neighbors
+  // Clear surrounded bit of neighbors
   const neighbors = movesMap[startCellIndex][0];
   for (let i = 0; i < 6; i++) {
     const neighborIndex = neighbors[i];

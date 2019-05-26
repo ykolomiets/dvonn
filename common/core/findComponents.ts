@@ -12,9 +12,9 @@ function dfs(index: number, board: Cell[], checked: boolean[], component: Cell[]
   }
 }
 
-export function findComponents(board: Cell[]): Cell[][] {
+export default function findComponents(board: Cell[]): Cell[][] {
   const result: Cell[][] = [];
-  const checkedCells = board.map(c => c.state.isEmpty);
+  const checkedCells = board.map(c => c.pieceStack === null);
   for (let i = 0; i < 49; i++) {
     if (!checkedCells[i]) {
       const component: Cell[] = [];

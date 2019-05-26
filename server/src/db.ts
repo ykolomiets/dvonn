@@ -1,10 +1,10 @@
 import { MongoClient, Db } from 'mongodb';
-import { PlayerColor } from '../../common/core/dvonn';
+import { PlayerColor, GameResult } from '../../common/core/dvonn';
 
 export interface GameInfo {
   startPosition: string;
   moves: [number, number][];
-  winner: PlayerColor;
+  result: GameResult;
 }
 
 class DbClient {
@@ -35,12 +35,12 @@ class DbClient {
         movesCount: gameInfo.moves.length,
         aiTurn,
       },
-      (err, res) => {
+      err => {
         if (err) {
           console.log('Saving game in db failed', err);
           return;
         }
-        console.log('Game saved', res);
+        console.log('Game saved');
       }
     );
   }
@@ -54,12 +54,12 @@ class DbClient {
         ...gameInfo,
         movesCount: gameInfo.moves.length,
       },
-      (err, res) => {
+      err => {
         if (err) {
           console.log('Saving game in db failed', err);
           return;
         }
-        console.log('Game saved', res);
+        console.log('Game saved');
       }
     );
   }

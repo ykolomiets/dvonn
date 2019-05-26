@@ -1,13 +1,14 @@
-import { ByteBoard } from './consts';
-import { Move, findAvailableMoves, movePiece } from './moves';
+/* eslint-disable no-else-return */
+import { findAvailableMoves, movePiece } from './moves';
+import { ByteBoard, Move } from './types';
 
-export function minimax(
+export default function minimax(
   evaluateBoard: (board: ByteBoard) => number,
   board: ByteBoard,
   isWhiteTurn: boolean,
   depth: number,
   maximizingPlayer: boolean,
-  stats: { observedNodes: number },
+  stats: { observedNodes: number }
 ): [number, Move | null] {
   if (depth === 0) {
     return [evaluateBoard(board), null];

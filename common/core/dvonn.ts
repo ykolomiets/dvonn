@@ -4,30 +4,23 @@ import printBoard from './boardPrinter';
 import { serializeBoard, deserializeBoard } from './serializer';
 import { shuffleArray } from './utils';
 import { movesMap } from './movesMap';
-import { findComponents } from './findComponents';
+import findComponents from './findComponents';
 
 export enum PlayerColor {
   White,
   Black,
 }
 
-export function setNeighbores(board: Cell[]): void {
-  for (let i = 0; i < 49; i += 1) {
-    const neighborsIndexes = adjacencyList[i];
-    const cellNeighbors: Neighbors = [null, null, null, null, null, null];
-    for (let j = 0; j < neighborsIndexes.length; j += 1) {
-      if (neighborsIndexes[j] !== -1) {
-        cellNeighbors[j as Direction] = board[neighborsIndexes[j]];
-      }
-    }
-    board[i].neighbors = cellNeighbors;
-  }
-}
-
 export enum GameStage {
   PlacingPieces,
   MovingPieces,
   GameOver,
+}
+
+export enum GameResult {
+  WhiteWin,
+  BlackWin,
+  Draw,
 }
 
 export type GameState =
@@ -44,7 +37,7 @@ export type GameState =
   | {
       stage: GameStage.GameOver;
       board: Cell[];
-      winner: PlayerColor;
+      result: GameResult;
     };
 
 export type SerializedGameState =
@@ -60,9 +53,22 @@ export type SerializedGameState =
     }
   | {
       stage: GameStage.GameOver;
-      winner: PlayerColor;
+      winner: GameResult;
       board: string;
     };
+
+export function setNeighbores(board: Cell[]): void {
+  for (let i = 0; i < 49; i += 1) {
+    const neighborsIndexes = adjacencyList[i];
+    const cellNeighbors: Neighbors = [null, null, null, null, null, null];
+    for (let j = 0; j < neighborsIndexes.length; j += 1) {
+      if (neighborsIndexes[j] !== -1) {
+        cellNeighbors[j as Direction] = board[neighborsIndexes[j]];
+      }
+    }
+    board[i].neighbors = cellNeighbors;
+  }
+}
 
 function serializeGameState(state: GameState): SerializedGameState {
   switch (state.stage) {
@@ -81,7 +87,7 @@ function serializeGameState(state: GameState): SerializedGameState {
     case GameStage.GameOver:
       return {
         stage: GameStage.GameOver,
-        winner: state.winner,
+        winner: state.result,
         board: serializeBoard(state.board),
       };
     default:
@@ -106,7 +112,7 @@ function deserializeGameState(state: SerializedGameState): GameState {
     case GameStage.GameOver:
       return {
         stage: GameStage.GameOver,
-        winner: state.winner,
+        result: state.winner,
         board: deserializeBoard(state.board),
       };
     default:
@@ -119,9 +125,7 @@ function createEmptyBoard(): Cell[] {
   for (let i = 0; i < 49; i += 1) {
     board.push({
       index: i,
-      state: {
-        isEmpty: true,
-      },
+      pieceStack: null,
       neighbors: [null, null, null, null, null, null],
     });
   }
@@ -139,25 +143,25 @@ function getAvailableMoves(board: Cell[], player: PlayerColor): AvailableMoves |
   for (let i = 0; i < 49; i += 1) {
     const cell = board[i];
     const playerPieceColor = player === PlayerColor.White ? PieceColor.White : PieceColor.Black;
-    if (!cell.state.isEmpty && cell.state.upperColor === playerPieceColor && cell.state.stackSize <= 10) {
+    if (cell.pieceStack && cell.pieceStack.upperColor === playerPieceColor && cell.pieceStack.stackSize <= 10) {
       const neighbors = movesMap[i][0];
       let surrounded = true;
       for (let direction = 0; direction < 6; direction += 1) {
         const index = neighbors[direction];
-        if (index === -1 || board[index].state.isEmpty) {
+        if (index === -1 || board[index].pieceStack === null) {
           surrounded = false;
           break;
         }
       }
       if (!surrounded) {
-        const movesFromMap = movesMap[i][cell.state.stackSize - 1];
+        const movesFromMap = movesMap[i][cell.pieceStack.stackSize - 1];
         if (movesFromMap) {
           const movesForCell: number[] = [];
           for (let direction = 0; direction < 6; direction += 1) {
             const cellIndex = movesFromMap[direction];
             if (cellIndex !== -1) {
               const targetCell = board[cellIndex];
-              if (!targetCell.state.isEmpty) {
+              if (targetCell.pieceStack !== null) {
                 movesForCell.push(cellIndex);
               }
             }
@@ -209,29 +213,27 @@ export class Game {
     if (this.state.turn !== player) {
       throw new Error('Another player turn');
     }
-    if (!this.state.board[pos].state.isEmpty) {
+    if (this.state.board[pos].pieceStack) {
       throw new Error('Cell already fulfilled');
     }
 
     this.history.push(serializeGameState(this.state));
 
     let alreadyPlacedCount = this.state.board.reduce((count, cell) => {
-      if (!cell.state.isEmpty) {
+      if (cell.pieceStack) {
         return count + 1;
       }
       return count;
     }, 0);
 
     if (alreadyPlacedCount < 3) {
-      this.state.board[pos].state = {
-        isEmpty: false,
+      this.state.board[pos].pieceStack = {
         upperColor: PieceColor.Red,
         stackSize: 1,
         containsDvonnPiece: true,
       };
     } else {
-      this.state.board[pos].state = {
-        isEmpty: false,
+      this.state.board[pos].pieceStack = {
         upperColor: player === PlayerColor.Black ? PieceColor.Black : PieceColor.White,
         stackSize: 1,
         containsDvonnPiece: false,
@@ -293,13 +295,13 @@ export class Game {
 
     const startCell = this.state.board[startPos];
     const targetCell = this.state.board[targetPos];
-    if (!startCell.state.isEmpty && !targetCell.state.isEmpty) {
-      targetCell.state.stackSize += startCell.state.stackSize;
-      targetCell.state.upperColor = player === PlayerColor.White ? PieceColor.White : PieceColor.Black;
-      if (!targetCell.state.containsDvonnPiece) {
-        targetCell.state.containsDvonnPiece = startCell.state.containsDvonnPiece;
+    if (startCell.pieceStack && targetCell.pieceStack) {
+      targetCell.pieceStack.stackSize += startCell.pieceStack.stackSize;
+      targetCell.pieceStack.upperColor = player === PlayerColor.White ? PieceColor.White : PieceColor.Black;
+      if (!targetCell.pieceStack.containsDvonnPiece) {
+        targetCell.pieceStack.containsDvonnPiece = startCell.pieceStack.containsDvonnPiece;
       }
-      startCell.state = { isEmpty: true };
+      startCell.pieceStack = null;
     }
     this.checkConnectivity();
 
@@ -309,6 +311,7 @@ export class Game {
     } else if (!getAvailableMoves(this.state.board, player)) {
       this.gameOver();
     }
+    this.printBoard();
     return true;
   }
 
@@ -325,14 +328,14 @@ export class Game {
       let containsDvonnPiece = false;
       for (let i = 0; i < component.length; i += 1) {
         const cell = component[i];
-        if (!cell.state.isEmpty && cell.state.containsDvonnPiece) {
+        if (cell.pieceStack && cell.pieceStack.containsDvonnPiece) {
           containsDvonnPiece = true;
           break;
         }
       }
       if (!containsDvonnPiece) {
         component.forEach(cell => {
-          cell.state = { isEmpty: true };
+          cell.pieceStack = null;
         });
       }
     });
@@ -340,10 +343,15 @@ export class Game {
 
   private gameOver(): void {
     const score = this.getScore();
-    const winner = score[PlayerColor.White] > score[PlayerColor.Black] ? PlayerColor.White : PlayerColor.Black;
+    let winner = GameResult.Draw;
+    if (score[PlayerColor.White] > score[PlayerColor.Black]) {
+      winner = GameResult.WhiteWin;
+    } else if (score[PlayerColor.White] < score[PlayerColor.Black]) {
+      winner = GameResult.BlackWin;
+    }
     this.state = {
       stage: GameStage.GameOver,
-      winner,
+      result: winner,
       board: this.state.board,
     };
   }
@@ -391,11 +399,11 @@ export class Game {
     };
     for (let i = 0; i < 49; i += 1) {
       const cell = this.state.board[i];
-      if (!cell.state.isEmpty) {
-        if (cell.state.upperColor === PieceColor.White) {
-          score[PlayerColor.White] += cell.state.stackSize;
-        } else if (cell.state.upperColor === PieceColor.Black) {
-          score[PlayerColor.Black] += cell.state.stackSize;
+      if (cell.pieceStack) {
+        if (cell.pieceStack.upperColor === PieceColor.White) {
+          score[PlayerColor.White] += cell.pieceStack.stackSize;
+        } else if (cell.pieceStack.upperColor === PieceColor.Black) {
+          score[PlayerColor.Black] += cell.pieceStack.stackSize;
         }
       }
     }

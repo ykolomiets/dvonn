@@ -1,5 +1,7 @@
-import { DVONN_PIECE_MASK, TOTAL_CELLS, ByteBoard } from './consts';
+/* eslint-disable no-bitwise */
+import { DVONN_PIECE_MASK, TOTAL_CELLS } from './consts';
 import { movesMap } from '../core/movesMap';
+import { ByteBoard } from './types';
 
 function dfs(index: number, board: ByteBoard, checked: boolean[], component: number[]): boolean {
   checked[index] = true;
@@ -20,7 +22,7 @@ function dfs(index: number, board: ByteBoard, checked: boolean[], component: num
   return cellContainsDvonnPiece || subcomponentContainsDvonnPiece;
 }
 
-export function checkConnectivity(board: ByteBoard): void {
+export default function checkConnectivity(board: ByteBoard): void {
   const checked = new Array(TOTAL_CELLS);
   for (let i = 0; i < TOTAL_CELLS; i++) {
     checked[i] = board[i] === 0;

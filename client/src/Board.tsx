@@ -2,7 +2,7 @@
 import React from 'react';
 import { css, jsx } from '@emotion/core';
 import boardImage from '../assets/images/board.svg';
-import { Cell, PieceColor, CellState, CellNotEmptyState } from '../../common/core/cell';
+import { Cell, PieceColor, PieceStack } from '../../common/core/cell';
 import Piece, { PieceStatus } from './Piece';
 import { AvailableMoves, PlayerColor, GameStage } from '../../common/core/dvonn';
 
@@ -21,6 +21,7 @@ interface BoardWaitingProps {
   size: { width: number; height: number };
   stage: BoardStage.Waiting;
   board: Cell[];
+  boardHash: Object;
   lastMove: LastMoveInfo | null;
 }
 interface BoardPlacingProps {
@@ -29,6 +30,7 @@ interface BoardPlacingProps {
   turn: PlayerColor;
   piece: PieceColor;
   board: Cell[];
+  boardHash: Object;
   onPlace: (to: number) => void;
 }
 
@@ -37,6 +39,7 @@ interface BoardMovingProps {
   stage: BoardStage.MovingPieces;
   turn: PlayerColor;
   board: Cell[];
+  boardHash: Object;
   lastMove: LastMoveInfo | null;
   availableMoves: AvailableMoves | null;
   onMove: (from: number, to: number) => void;
@@ -46,6 +49,8 @@ type BoardProps = BoardWaitingProps | BoardPlacingProps | BoardMovingProps;
 
 interface BoardState {
   selectedPieceIndex: number;
+  boardHash: Object;
+  animate: boolean;
 }
 
 class Board extends React.Component<BoardProps, BoardState> {
@@ -53,20 +58,37 @@ class Board extends React.Component<BoardProps, BoardState> {
   public constructor(props: BoardProps) {
     super(props);
     this.state = {
+      animate: true,
       selectedPieceIndex: -1,
+      boardHash: props.boardHash,
     };
     this.pieceSize = props.size.height / 5;
   }
 
+  public static getDerivedStateFromProps(props: BoardProps, state: BoardState) {
+    if (props.boardHash !== state.boardHash) {
+      return {
+        animate: true,
+        boardHash: props.boardHash,
+        selectedPieceIndex: -1,
+      };
+    } else {
+      return {
+        animate: false,
+      };
+    }
+  }
+
   private selectPiece(index: number): void {
+    console.log('Select piece', index);
     if (this.props.stage !== BoardStage.MovingPieces) return;
 
-    const piece = this.props.board[index];
-    if (piece.state.isEmpty) return;
+    const cell = this.props.board[index];
+    if (cell.pieceStack === null) return;
     if (
-      piece.state.upperColor === PieceColor.Red ||
-      (piece.state.upperColor === PieceColor.Black && this.props.turn === PlayerColor.White) ||
-      (piece.state.upperColor === PieceColor.White && this.props.turn === PlayerColor.Black)
+      cell.pieceStack.upperColor === PieceColor.Red ||
+      (cell.pieceStack.upperColor === PieceColor.Black && this.props.turn === PlayerColor.White) ||
+      (cell.pieceStack.upperColor === PieceColor.White && this.props.turn === PlayerColor.Black)
     ) {
       return;
     }
@@ -86,13 +108,13 @@ class Board extends React.Component<BoardProps, BoardState> {
   private handlePieceClick = (index: number) => {
     if (this.props.stage !== BoardStage.MovingPieces) return;
 
-    const piece = this.props.board[index];
-    if (piece.state.isEmpty) return;
+    const cell = this.props.board[index];
+    if (cell.pieceStack === null) return;
 
     if (this.state.selectedPieceIndex === -1) {
       this.selectPiece(index);
     } else {
-      if (piece.index === this.state.selectedPieceIndex) {
+      if (cell.index === this.state.selectedPieceIndex) {
         this.unselectPiece();
         return;
       }
@@ -117,16 +139,16 @@ class Board extends React.Component<BoardProps, BoardState> {
     }
 
     return this.props.board.map(cell => {
-      if (cell.state.isEmpty) return null;
+      if (cell.pieceStack === null) return null;
       return (
         <Piece
           key={cell.index}
           index={cell.index}
           status={PieceStatus.None}
           moved={false}
-          stackSize={cell.state.stackSize}
-          upperColor={cell.state.upperColor}
-          containsDvonnPiece={cell.state.containsDvonnPiece}
+          stackSize={cell.pieceStack.stackSize}
+          upperColor={cell.pieceStack.upperColor}
+          containsDvonnPiece={cell.pieceStack.containsDvonnPiece}
           size={this.pieceSize}
           position={this.getPiecePosition(cell.index)}
           onClick={() => {}}
@@ -157,17 +179,17 @@ class Board extends React.Component<BoardProps, BoardState> {
       const index = i;
       const cellBeforeMove = boardBeforeMove[i];
       const cellAfterMove = boardAfterMove[i];
-      if (cellBeforeMove.state.isEmpty) continue;
+      if (cellBeforeMove.pieceStack === null) continue;
 
       if (index === move[1]) {
         pieces.push(
           <Piece
             key={move[1]}
             index={move[1]}
-            status={cellAfterMove.state.isEmpty ? PieceStatus.Removed : PieceStatus.None}
-            upperColor={cellBeforeMove.state.upperColor}
-            stackSize={cellBeforeMove.state.stackSize}
-            containsDvonnPiece={cellBeforeMove.state.containsDvonnPiece}
+            status={cellAfterMove.pieceStack === null ? PieceStatus.Removed : PieceStatus.None}
+            upperColor={cellBeforeMove.pieceStack.upperColor}
+            stackSize={cellBeforeMove.pieceStack.stackSize}
+            containsDvonnPiece={cellBeforeMove.pieceStack.containsDvonnPiece}
             size={this.pieceSize}
             moved={false}
             position={this.getPiecePosition(move[1])}
@@ -178,21 +200,25 @@ class Board extends React.Component<BoardProps, BoardState> {
 
       if (index === move[0]) {
         const targetCell = boardAfterMove[move[1]];
-        if (targetCell.state.isEmpty) {
-          const targetStateBeforeMove = boardBeforeMove[move[1]].state as CellNotEmptyState;
-          pieces.push(
-            <Piece
-              key={move[0]}
-              index={move[1]}
-              status={PieceStatus.Removed}
-              moved={true}
-              upperColor={cellBeforeMove.state.upperColor}
-              stackSize={cellBeforeMove.state.stackSize + targetStateBeforeMove.stackSize}
-              containsDvonnPiece={cellBeforeMove.state.containsDvonnPiece || targetStateBeforeMove.containsDvonnPiece}
-              size={this.pieceSize}
-              position={this.getPiecePosition(move[1])}
-            />
-          );
+        if (targetCell.pieceStack === null) {
+          const targetStateBeforeMove = boardBeforeMove[move[1]].pieceStack;
+          if (targetStateBeforeMove) {
+            pieces.push(
+              <Piece
+                key={move[0]}
+                index={move[1]}
+                status={PieceStatus.Removed}
+                moved={true}
+                upperColor={cellBeforeMove.pieceStack.upperColor}
+                stackSize={cellBeforeMove.pieceStack.stackSize + targetStateBeforeMove.stackSize}
+                containsDvonnPiece={
+                  cellBeforeMove.pieceStack.containsDvonnPiece || targetStateBeforeMove.containsDvonnPiece
+                }
+                size={this.pieceSize}
+                position={this.getPiecePosition(move[1])}
+              />
+            );
+          }
         } else {
           pieces.push(
             <Piece
@@ -200,9 +226,9 @@ class Board extends React.Component<BoardProps, BoardState> {
               index={move[1]}
               status={PieceStatus.None}
               moved={true}
-              upperColor={targetCell.state.upperColor}
-              stackSize={targetCell.state.stackSize}
-              containsDvonnPiece={targetCell.state.containsDvonnPiece}
+              upperColor={targetCell.pieceStack.upperColor}
+              stackSize={targetCell.pieceStack.stackSize}
+              containsDvonnPiece={targetCell.pieceStack.containsDvonnPiece}
               size={this.pieceSize}
               position={this.getPiecePosition(move[1])}
               onClick={this.handlePieceClick}
@@ -213,16 +239,16 @@ class Board extends React.Component<BoardProps, BoardState> {
         continue;
       }
 
-      if (cellAfterMove.state.isEmpty) {
+      if (cellAfterMove.pieceStack === null) {
         pieces.push(
           <Piece
             key={index}
             index={index}
             status={PieceStatus.Removed}
             moved={false}
-            upperColor={cellBeforeMove.state.upperColor}
-            stackSize={cellBeforeMove.state.stackSize}
-            containsDvonnPiece={cellBeforeMove.state.containsDvonnPiece}
+            upperColor={cellBeforeMove.pieceStack.upperColor}
+            stackSize={cellBeforeMove.pieceStack.stackSize}
+            containsDvonnPiece={cellBeforeMove.pieceStack.containsDvonnPiece}
             size={this.pieceSize}
             position={this.getPiecePosition(index)}
           />
@@ -234,9 +260,9 @@ class Board extends React.Component<BoardProps, BoardState> {
             index={index}
             status={PieceStatus.None}
             moved={false}
-            upperColor={cellAfterMove.state.upperColor}
-            stackSize={cellAfterMove.state.stackSize}
-            containsDvonnPiece={cellAfterMove.state.containsDvonnPiece}
+            upperColor={cellAfterMove.pieceStack.upperColor}
+            stackSize={cellAfterMove.pieceStack.stackSize}
+            containsDvonnPiece={cellAfterMove.pieceStack.containsDvonnPiece}
             size={this.pieceSize}
             position={this.getPiecePosition(index)}
             onClick={this.handlePieceClick}
@@ -244,7 +270,6 @@ class Board extends React.Component<BoardProps, BoardState> {
         );
       }
     }
-    props.lastMove = null;
     return pieces;
   }
 
@@ -253,7 +278,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 
     const props: BoardMovingProps = this.props;
 
-    if (props.lastMove) {
+    if (props.lastMove && this.state.animate) {
       return this.renderLastMove();
     }
 
@@ -261,35 +286,34 @@ class Board extends React.Component<BoardProps, BoardState> {
     if (props.availableMoves && props.availableMoves[this.state.selectedPieceIndex]) {
       availableMoves = props.availableMoves[this.state.selectedPieceIndex];
     }
-    if (props.lastMove === null) {
-      return props.board.map(cell => {
-        if (cell.state.isEmpty) return null;
-        let status: PieceStatus = PieceStatus.None;
-        if (this.state.selectedPieceIndex === cell.index) {
-          status = PieceStatus.Selected;
-        } else if (
-          this.state.selectedPieceIndex !== -1 &&
-          this.state.selectedPieceIndex !== cell.index &&
-          availableMoves.includes(cell.index)
-        ) {
-          status = PieceStatus.Highlighted;
-        }
-        return (
-          <Piece
-            key={cell.index}
-            index={cell.index}
-            status={status}
-            moved={false}
-            stackSize={cell.state.stackSize}
-            upperColor={cell.state.upperColor}
-            containsDvonnPiece={cell.state.containsDvonnPiece}
-            size={this.pieceSize}
-            position={this.getPiecePosition(cell.index)}
-            onClick={this.handlePieceClick}
-          />
-        );
-      });
-    }
+    return props.board.map(cell => {
+      if (cell.pieceStack === null) return null;
+
+      let status: PieceStatus = PieceStatus.None;
+      if (this.state.selectedPieceIndex === cell.index) {
+        status = PieceStatus.Selected;
+      } else if (
+        this.state.selectedPieceIndex !== -1 &&
+        this.state.selectedPieceIndex !== cell.index &&
+        availableMoves.includes(cell.index)
+      ) {
+        status = PieceStatus.Highlighted;
+      }
+      return (
+        <Piece
+          key={cell.index}
+          index={cell.index}
+          status={status}
+          moved={false}
+          stackSize={cell.pieceStack.stackSize}
+          upperColor={cell.pieceStack.upperColor}
+          containsDvonnPiece={cell.pieceStack.containsDvonnPiece}
+          size={this.pieceSize}
+          position={this.getPiecePosition(cell.index)}
+          onClick={this.handlePieceClick}
+        />
+      );
+    });
   }
 
   public render() {
@@ -323,7 +347,6 @@ class Board extends React.Component<BoardProps, BoardState> {
     y: number;
   } {
     if (this.positions[index]) {
-      console.log('Memoized');
       return this.positions[index];
     }
 

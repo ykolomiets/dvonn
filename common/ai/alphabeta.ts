@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-else-return */
-import { ByteBoard } from './consts';
-import { Move, findAvailableMoves, movePiece } from './moves';
+import { findAvailableMoves, movePiece } from './moves';
+import { ByteBoard, Move, EvaluationFunction } from './types';
 
 function alphabetaMax(
-  evaluateBoard: (board: ByteBoard) => number,
+  evaluateBoard: EvaluationFunction,
   board: ByteBoard,
   isWhiteTurn: boolean,
   depth: number,
@@ -13,10 +13,12 @@ function alphabetaMax(
   beta: number,
   stats: { observedNodes: number }
 ): [number, Move | null] {
-  if (depth === 0) {
-    return [evaluateBoard(board), null];
+  const whiteMoves = findAvailableMoves(board, true);
+  const blackMoves = findAvailableMoves(board, false);
+  if ((whiteMoves.length === 0 && blackMoves.length === 0) || depth === 0) {
+    return [evaluateBoard(board, whiteMoves, blackMoves), null];
   }
-  const moves = findAvailableMoves(board, isWhiteTurn);
+  const moves = isWhiteTurn ? whiteMoves : blackMoves;
   if (moves.length === 0) {
     const [value] = alphabetaMax(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, stats);
     return [value, null];
@@ -45,7 +47,7 @@ function alphabetaMax(
 }
 
 function alphabetaMin(
-  evaluateBoard: (board: ByteBoard) => number,
+  evaluateBoard: EvaluationFunction,
   board: ByteBoard,
   isWhiteTurn: boolean,
   depth: number,
@@ -53,10 +55,12 @@ function alphabetaMin(
   beta: number,
   stats: { observedNodes: number }
 ): [number, Move | null] {
-  if (depth === 0) {
-    return [evaluateBoard(board), null];
+  const whiteMoves = findAvailableMoves(board, true);
+  const blackMoves = findAvailableMoves(board, false);
+  if ((whiteMoves.length === 0 && blackMoves.length === 0) || depth === 0) {
+    return [evaluateBoard(board, whiteMoves, blackMoves), null];
   }
-  const moves = findAvailableMoves(board, isWhiteTurn);
+  const moves = isWhiteTurn ? whiteMoves : blackMoves;
   if (moves.length === 0) {
     const [value] = alphabetaMax(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, stats);
     return [value, null];
@@ -83,7 +87,7 @@ function alphabetaMin(
 }
 
 export default function alphabeta(
-  evaluateBoard: (board: ByteBoard) => number,
+  evaluateBoard: EvaluationFunction,
   board: ByteBoard,
   isWhiteTurn: boolean,
   depth: number,

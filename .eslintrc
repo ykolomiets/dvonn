@@ -9,7 +9,9 @@
   "rules": {
     "@typescript-eslint/indent": 0,
     "no-console": "off",
-    "no-param-reassign": "warn"
+    "no-param-reassign": "warn",
+    "no-plusplus": "off",
+    "no-continue": "off"
   },
   "parser": "@typescript-eslint/parser",
   "settings": {

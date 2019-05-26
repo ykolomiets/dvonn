@@ -9,8 +9,9 @@ import {
   PlayerColor,
   GameStage,
   Score,
+  GameResult,
 } from '../../common/core/dvonn';
-import { Cell } from '../../common/core/cell';
+import { Cell, PieceColor } from '../../common/core/cell';
 
 type InfoBarProps =
   | {
@@ -21,7 +22,7 @@ type InfoBarProps =
   | {
       stage: GameStage.GameOver;
       player: PlayerColor;
-      winner: PlayerColor;
+      result: GameResult;
       score: Score;
     };
 
@@ -30,7 +31,10 @@ function InfoBar(props: InfoBarProps) {
   switch (props.stage) {
     case GameStage.GameOver:
       const score = `${props.score[PlayerColor.White]} - ${props.score[PlayerColor.Black]}`;
-      message = `${props.winner === PlayerColor.White ? 'White' : 'Black'} won! Final score: ${score}`;
+      message = `Final score: ${score}`;
+      message += ` -> ${
+        props.result === GameResult.Draw ? 'draw' : props.result === GameResult.WhiteWin ? 'white won' : 'black won'
+      }`;
       break;
     case GameStage.PlacingPieces:
       message = `${props.turn === PlayerColor.White ? 'White' : 'Black'} place piece`;
@@ -206,7 +210,9 @@ class Game extends React.Component<GameProps, GameState> {
           size={{ width: 1353, height: 500 }}
           stage={BoardStage.PlacingPieces}
           turn={this.state.playerColor}
+          piece={PieceColor.Red}
           board={this.state.coreLogicState.board}
+          boardHash={new Object()}
           onPlace={this.onPlayerPlace}
         />
       );
@@ -221,6 +227,7 @@ class Game extends React.Component<GameProps, GameState> {
           turn={this.state.playerColor}
           lastMove={this.state.lastMove}
           board={this.state.coreLogicState.board}
+          boardHash={new Object()}
           onMove={this.onPlayerMove}
           availableMoves={this.dvonnLogic.getAvailableMoves(this.state.playerColor)}
         />
@@ -231,7 +238,7 @@ class Game extends React.Component<GameProps, GameState> {
         <InfoBar
           stage={GameStage.GameOver}
           player={this.state.playerColor}
-          winner={this.state.coreLogicState.winner}
+          result={this.state.coreLogicState.result}
           score={finalScore}
         />
       );
@@ -240,6 +247,7 @@ class Game extends React.Component<GameProps, GameState> {
           size={{ width: 1353, height: 500 }}
           stage={BoardStage.Waiting}
           board={this.state.coreLogicState.board}
+          boardHash={new Object()}
           lastMove={this.state.lastMove}
         />
       );

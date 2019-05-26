@@ -427,3 +427,5 @@ export const movesMap: MovesMap = [
     [-1, -1, -1, -1, 40, -1],
   ],
 ];
+
+export default movesMap;

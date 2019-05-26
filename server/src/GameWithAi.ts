@@ -1,4 +1,4 @@
-import { Game as DvonnLogic, PlayerColor, GameStage } from '../../common/core/dvonn';
+import { Game as DvonnLogic, PlayerColor, GameStage, GameResult } from '../../common/core/dvonn';
 import getBestMove from '../../common/ai/ai';
 import db, { GameInfo } from './db';
 
@@ -27,7 +27,7 @@ class GameWithAi {
     this.info = {
       startPosition: serializedState.board,
       moves: [],
-      winner: PlayerColor.White,
+      result: GameResult.Draw,
     };
 
     this.socket.emit('state', serializedState);
@@ -51,6 +51,7 @@ class GameWithAi {
     try {
       this.logic.movePiece(this.playerTurn, move[0], move[1]);
       this.info.moves.push(move);
+
       this.next();
     } catch (e) {
       this.socket.emit('state', this.logic.getSerializedState());
@@ -60,18 +61,25 @@ class GameWithAi {
   private next(): void {
     if (this.logic.state.stage === GameStage.MovingPieces) {
       if (this.logic.state.turn === this.aiTurn) {
-        const move = getBestMove(this.logic.state.board, this.aiTurn === PlayerColor.White, 4);
+        let time = Date.now();
+        const move = getBestMove(this.logic.state.board, this.aiTurn === PlayerColor.White, 3500);
+        time = Date.now() - time;
         if (move) {
           this.logic.movePiece(this.aiTurn, move[0], move[1]);
           this.info.moves.push(move);
-          setTimeout(() => {
+          if (time < 1500) {
+            setTimeout(() => {
+              this.socket.emit('opponentMove', move, this.logic.getSerializedState());
+              this.next();
+            }, 1500 - time);
+          } else {
             this.socket.emit('opponentMove', move, this.logic.getSerializedState());
             this.next();
-          }, 1000);
+          }
         }
       }
     } else if (this.logic.state.stage === GameStage.GameOver) {
-      this.info.winner = this.logic.state.winner;
+      this.info.result = this.logic.state.result;
       this.finish();
     }
   }

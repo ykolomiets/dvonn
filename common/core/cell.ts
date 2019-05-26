@@ -4,19 +4,6 @@ export enum PieceColor {
   Black = 'b',
 }
 
-export interface CellEmptyState {
-  isEmpty: true;
-}
-
-export interface CellNotEmptyState {
-  isEmpty: false;
-  stackSize: number;
-  upperColor: PieceColor;
-  containsDvonnPiece: boolean;
-}
-
-export type CellState = CellEmptyState | CellNotEmptyState;
-
 export enum Direction {
   NorthEast = 0,
   East,
@@ -26,10 +13,16 @@ export enum Direction {
   NorthWest,
 }
 
+export interface PieceStack {
+  stackSize: number;
+  upperColor: PieceColor;
+  containsDvonnPiece: boolean;
+}
+
 export type Neighbors = [Cell | null, Cell | null, Cell | null, Cell | null, Cell | null, Cell | null];
 
 export interface Cell {
   index: number;
-  state: CellState;
+  pieceStack: PieceStack | null;
   neighbors: Neighbors;
 }

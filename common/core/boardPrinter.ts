@@ -1,12 +1,12 @@
-import { Cell, CellState, PieceColor, Direction } from './cell';
+import { Cell, PieceColor, Direction, PieceStack } from './cell';
 
-function formatCellInfo(state: CellState): string {
-  if (state.isEmpty) {
+function formatCellInfo(stack: PieceStack | null): string {
+  if (stack === null) {
     return ' o ';
   }
 
   let result = '';
-  switch (state.upperColor) {
+  switch (stack.upperColor) {
     case PieceColor.Black:
       result += '\x1b[32m';
       break;
@@ -19,11 +19,11 @@ function formatCellInfo(state: CellState): string {
     default:
       break;
   }
-  if (state.stackSize.toString().length === 1) {
+  if (stack.stackSize.toString().length === 1) {
     result += ' ';
   }
-  result += state.stackSize;
-  result += state.containsDvonnPiece ? '*' : ' ';
+  result += stack.stackSize;
+  result += stack.containsDvonnPiece ? '*' : ' ';
   result += '\x1b[0m';
   return result;
 }
@@ -31,9 +31,9 @@ function formatCellInfo(state: CellState): string {
 function formatLine(lineCells: Cell[]): string {
   let result = '';
   lineCells.forEach((cell, index) => {
-    result += formatCellInfo(cell.state);
+    result += formatCellInfo(cell.pieceStack);
     if (index === lineCells.length - 1) return;
-    if (cell.state.isEmpty || lineCells[index + 1].state.isEmpty) {
+    if (cell.pieceStack === null || lineCells[index + 1].pieceStack === null) {
       result += '   ';
     } else {
       result += ' - ';
@@ -45,14 +45,14 @@ function formatLine(lineCells: Cell[]): string {
 function formatDownConnections(cells: Cell[]): string {
   let result = '';
   cells.forEach(cell => {
-    if (cell.state.isEmpty) {
+    if (cell.pieceStack === null) {
       result += '      ';
     } else {
       if (cell.neighbors === null) {
         throw new Error('Cell neighbors are absent');
       }
       const swNeighbor = cell.neighbors[Direction.SouthWest];
-      if (swNeighbor !== null && !swNeighbor.state.isEmpty) {
+      if (swNeighbor !== null && swNeighbor.pieceStack !== null) {
         result += '/';
       } else {
         result += ' ';
@@ -61,7 +61,7 @@ function formatDownConnections(cells: Cell[]): string {
       result += ' ';
 
       const seNeighbor = cell.neighbors[Direction.SouthEast];
-      if (seNeighbor !== null && !seNeighbor.state.isEmpty) {
+      if (seNeighbor !== null && seNeighbor.pieceStack !== null) {
         result += '\\';
       } else {
         result += ' ';
@@ -76,14 +76,14 @@ function formatDownConnections(cells: Cell[]): string {
 function formatUpConnections(cells: Cell[]): string {
   let result = '';
   cells.forEach(cell => {
-    if (cell.state.isEmpty) {
+    if (cell.pieceStack === null) {
       result += '      ';
     } else {
       if (cell.neighbors === null) {
         throw new Error('Cell neighbors are absent');
       }
       const nwNeighbor = cell.neighbors[Direction.NorthWest];
-      if (nwNeighbor !== null && !nwNeighbor.state.isEmpty) {
+      if (nwNeighbor !== null && nwNeighbor.pieceStack !== null) {
         result += '\\';
       } else {
         result += ' ';
@@ -92,7 +92,7 @@ function formatUpConnections(cells: Cell[]): string {
       result += ' ';
 
       const neNeighbor = cell.neighbors[Direction.NorthEast];
-      if (neNeighbor !== null && !neNeighbor.state.isEmpty) {
+      if (neNeighbor !== null && neNeighbor.pieceStack !== null) {
         result += '/';
       } else {
         result += ' ';

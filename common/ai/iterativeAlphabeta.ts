@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-else-return */
-import { ByteBoard } from './consts';
-import { Move, findAvailableMoves, movePiece } from './moves';
+import { findAvailableMoves, movePiece } from './moves';
+import { ByteBoard, Move } from './types';
 
 function alphabetaMax(
-  evaluateBoard: (board: ByteBoard) => number,
+  evaluateBoard: (board: ByteBoard, whiteMoves: Move[], blackMoves: Move[]) => number,
   board: ByteBoard,
   isWhiteTurn: boolean,
   depth: number,
@@ -14,10 +14,12 @@ function alphabetaMax(
   timeout: number,
   stats: { observedNodes: number }
 ): [number, Move | null] {
-  if (depth === 0 || Date.now() > timeout) {
-    return [evaluateBoard(board), null];
+  const whiteMoves = findAvailableMoves(board, true);
+  const blackMoves = findAvailableMoves(board, false);
+  if ((whiteMoves.length === 0 && blackMoves.length === 0) || depth === 0 || Date.now() > timeout) {
+    return [evaluateBoard(board, whiteMoves, blackMoves), null];
   }
-  const moves = findAvailableMoves(board, isWhiteTurn);
+  const moves = isWhiteTurn ? whiteMoves : blackMoves;
   if (moves.length === 0) {
     const [value] = alphabetaMax(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, timeout, stats);
     return [value, null];
@@ -46,7 +48,7 @@ function alphabetaMax(
 }
 
 function alphabetaMin(
-  evaluateBoard: (board: ByteBoard) => number,
+  evaluateBoard: (board: ByteBoard, whiteMoves: Move[], blackMoves: Move[]) => number,
   board: ByteBoard,
   isWhiteTurn: boolean,
   depth: number,
@@ -55,10 +57,12 @@ function alphabetaMin(
   timeout: number,
   stats: { observedNodes: number }
 ): [number, Move | null] {
-  if (depth === 0 || Date.now() > timeout) {
-    return [evaluateBoard(board), null];
+  const whiteMoves = findAvailableMoves(board, true);
+  const blackMoves = findAvailableMoves(board, false);
+  if ((whiteMoves.length === 0 && blackMoves.length === 0) || depth === 0 || Date.now() > timeout) {
+    return [evaluateBoard(board, whiteMoves, blackMoves), null];
   }
-  const moves = findAvailableMoves(board, isWhiteTurn);
+  const moves = isWhiteTurn ? whiteMoves : blackMoves;
   if (moves.length === 0) {
     const [value] = alphabetaMax(evaluateBoard, board, !isWhiteTurn, depth - 1, alpha, beta, timeout, stats);
     return [value, null];
@@ -85,16 +89,16 @@ function alphabetaMin(
 }
 
 export default function alphabeta(
-  evaluateBoard: (board: ByteBoard) => number,
+  evaluateBoard: (board: ByteBoard, whiteMoves: Move[], blackMoves: Move[]) => number,
   board: ByteBoard,
   isWhiteTurn: boolean,
   maxtime: number,
-  stats: { observedNodes: number }
+  stats: { observedNodes: number; maxDepth: number }
 ): Move {
   let res: Move | null = null;
   const timeout = Date.now() + maxtime;
   let depth = 0;
-  while (Date.now() < timeout) {
+  while (true) {
     depth += 1;
     const iterStats = { observedNodes: 0 };
     const [value, move] = alphabetaMax(
@@ -107,14 +111,16 @@ export default function alphabeta(
       timeout,
       iterStats
     );
-    console.log(`Depth ${depth}: ${iterStats.observedNodes} nodes`);
+    if (Date.now() > timeout) {
+      break;
+    }
     stats.observedNodes += iterStats.observedNodes;
     res = move;
     if (value === Infinity || value === -Infinity) {
       break;
     }
   }
-  console.log('Max depth: ', depth);
+  stats.maxDepth = depth;
   if (res === null) {
     throw new Error();
   }
